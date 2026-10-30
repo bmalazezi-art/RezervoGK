@@ -1,0 +1,34 @@
+.header .nav-links > .mobile-account-link {
+  display: none;
+}
+
+.header .desktop-account-link {
+  border: 0;
+  background: none;
+  color: #bdc8c5;
+  padding: 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.header .desktop-account-link:hover {
+  color: white;
+}
+
+@media (max-width: 900px) {
+  .header .desktop-account-link {
+    display: none;
+  }
+
+  .header .nav-links > .mobile-account-link {
+    display: block;
+  }
+}
+
+/* Reuse the existing language slot; keyboard/touch controls do not remount forms. */
+.language-control { position: relative; flex-shrink: 0; }
+.lang-switch button { border: 0; background: none; padding: 4px 2px; color: inherit; font: inherit; cursor: pointer; opacity: .5; }
+.lang-switch button[aria-pressed="true"] { opacity: 1; font-weight: 700; }
+.lang-switch button:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.language-error { position: absolute; top: 100%; right: 0; width: 200px; padding: 8px; background: white; color: #9b2226; font-size: 12px; z-index: 30; }

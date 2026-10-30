@@ -1,0 +1,44 @@
+{
+    "date": "2026-10-24",
+    "backup": "/Users/maxtontech/Desktop/RezervoGk/storage/app/backups/free-launch-20261024_105831-2a6bd6",
+    "full_backup_restore_verified": false,
+    "separate_schema_creation_blocked": "1044: application user is restricted to its existing schema; grants unchanged",
+    "isolated_mysql_table_migration_and_rollback_verified": true,
+    "qa_tables_removed": true,
+    "only_target_migration_applied": true,
+    "original_columns_and_rows_preserved": true,
+    "publication_controls_installed": true,
+    "payment_outbox_still_pending": true,
+    "admins": 0,
+    "payments": 0,
+    "subscriptions": 0,
+    "bank_submissions_enabled": false,
+    "continuation_verification": {
+        "date": "2026-10-25",
+        "retained_database_available": false,
+        "connection_error": 2002,
+        "fresh_retained_migration_ledger_verified": false,
+        "retained_database_mutations_performed": false,
+        "grants_changed": false,
+        "full_backup_restore_verified": false,
+        "backup_files_present_nonempty_private": true,
+        "isolated_sqlite_full_migration_set_verified": true,
+        "backup_files": {
+            "columns.json": {
+                "bytes": 2034,
+                "mode": "0o600",
+                "sha256": "1a20bb81940905b16bf95867eb9ca7d196688a9db627405955709638cc848703"
+            },
+            "database.sql": {
+                "bytes": 23902,
+                "mode": "0o600",
+                "sha256": "81b0009eeccc77205a93d567d72c558df3e5b1c157fe172f0a694f04bfa06c77"
+            },
+            "fingerprints.json": {
+                "bytes": 1674,
+                "mode": "0o600",
+                "sha256": "93d5cddc3a95d24a1a3ceea06fc1114840e8268f184239d0af43c53e435571b7"
+            }
+        }
+    }
+}

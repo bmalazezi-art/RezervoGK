@@ -1,0 +1,270 @@
+{
+  "date": "2026-10-22",
+  "milestone": "M7 Step 5",
+  "status": "audit and runbook complete; production deployment blocked",
+  "scope": "documentation plus read-only local diagnostics and isolated QA",
+  "deployed": false,
+  "production_target_supplied": false,
+  "production_target_probed": false,
+  "application_code_or_ui_modified": false,
+  "retained_database_migrated": false,
+  "database_repair_or_upgrade_attempted": false,
+  "admins_promoted": 0,
+  "live_bank_or_mail_enabled": false,
+  "local_runtime": {
+    "php_cli": "8.4.12",
+    "node": "22.23.2",
+    "composer": "2.10.1",
+    "required_extensions_present": true,
+    "production_platform_requirements": "passed on local CLI; patched web/CLI target unverified",
+    "php_security_gate": {
+      "date": "2026-10-21",
+      "upstream_84_fix": "8.4.27",
+      "cves": [
+        "CVE-2026-109618",
+        "CVE-2026-109619"
+      ],
+      "local_vendor_backport_status": "unverified",
+      "runtime_updated": false,
+      "source": "https://www.php.net/archive/2026.php"
+    },
+    "mariadb_104_maintenance_ended": "2024-06-18"
+  },
+  "local_database_and_config_audit": {
+    "engine": "10.4.28-MariaDB",
+    "server_metadata": {
+      "distribution": "Source distribution",
+      "os": "osx10.10",
+      "architecture": "x86_64",
+      "event_scheduler": "OFF",
+      "system_timezone": "CEST",
+      "session_timezone": "SYSTEM",
+      "binary_log_enabled": "0",
+      "innodb_flush_log_at_trx_commit": "1"
+    },
+    "retained_counts": {
+      "cache": 0,
+      "cache_locks": 0,
+      "cities": 4,
+      "countries": 3,
+      "failed_jobs": 0,
+      "goalkeeper_availabilities": 10,
+      "goalkeeper_contacts": 5,
+      "goalkeeper_profile_match_format": 11,
+      "goalkeeper_profiles": 5,
+      "goalkeeper_weekly_hours": 5,
+      "job_batches": 0,
+      "jobs": 0,
+      "manual_payments": 0,
+      "match_formats": 3,
+      "migrations": 9,
+      "password_reset_tokens": 0,
+      "payment_audits": 0,
+      "sessions": 0,
+      "subscriptions": 0,
+      "users": 1
+    },
+    "admins": 0,
+    "configuration": {
+      "environment": "local",
+      "debug": true,
+      "canonical_https": false,
+      "session_driver": "file",
+      "session_secure": false,
+      "session_http_only": true,
+      "session_same_site": "lax",
+      "cache_store": "file",
+      "queue_connection": "sync",
+      "bank_enabled": false,
+      "mail_enabled": false,
+      "local_smtp_bypass": false,
+      "config_cached": false,
+      "routes_cached": false,
+      "env_permissions": "600"
+    },
+    "1558": {
+      "reproduced": true,
+      "native_code": 1558,
+      "sqlstate": "HY000",
+      "expected_columns": 21,
+      "found_columns": 20,
+      "created_with_version_id": 100108,
+      "running_version_id": 100428,
+      "mysql_proc_actual_columns": 20,
+      "app_schema_stored_routines": 0,
+      "app_schema_scheduled_events": 0,
+      "investigation_read_only": true,
+      "repair_attempted": false,
+      "upgrade_marker_readable": false
+    }
+  },
+  "existing_backup_recheck": {
+    "retained_rows_match_fresh_backup": true,
+    "private_backup_permissions": true,
+    "temporary_credentials_removed": true,
+    "sql_backup_checksums_match": true,
+    "asset_checksums_match": true,
+    "missing_stored_photos": 0,
+    "invalid_country_currency_or_negative_prices": 0,
+    "invalid_weekly_hours": 0,
+    "views_in_app_schema": 0,
+    "admins": 0,
+    "bank_enabled": false,
+    "bank_configured": false,
+    "transactional_mail_enabled": false,
+    "outbox_in_retained_database": false
+  },
+  "isolated_cache_and_health_rehearsal": {
+    "isolated": true,
+    "source_database_used": false,
+    "commands": {
+      "optimize": {
+        "exit_code": 0
+      },
+      "route:list": {
+        "exit_code": 0
+      },
+      "schedule:list": {
+        "exit_code": 0
+      },
+      "launch:status": {
+        "exit_code": 1
+      }
+    },
+    "cached_route_count": 32,
+    "health_route_present": true,
+    "outbox_schedule_present": true,
+    "cached_preflight_environment": {
+      "production_environment": true,
+      "debug_disabled": true,
+      "canonical_https_url": true,
+      "secure_session_cookie": true
+    },
+    "cached_preflight_flags": {
+      "bank_transfer_switch_enabled": false,
+      "bank_submissions_enabled": false,
+      "transactional_mail_enabled": false
+    },
+    "database_deliberately_empty": true,
+    "health_status_with_empty_database": 200,
+    "health_is_not_database_readiness": true,
+    "configuration_cache_isolated": true,
+    "cache_files_present": true,
+    "success": true,
+    "private_cache_qa_directory_removed": true
+  },
+  "read_only_launch_status": {
+    "read_only": true,
+    "configuration_checks_passed": false,
+    "activation_authorized": false,
+    "checks": {
+      "production_environment": false,
+      "debug_disabled": false,
+      "canonical_https_url": false,
+      "secure_session_cookie": false,
+      "http_only_session_cookie": true,
+      "bank_details_present": false,
+      "transactional_mail_configuration": false,
+      "private_receipts_outside_public_storage": true,
+      "admin_account_exists": false,
+      "outbox_migration_installed": false,
+      "database_available": true
+    },
+    "blocked_checks": [
+      "production_environment",
+      "debug_disabled",
+      "canonical_https_url",
+      "secure_session_cookie",
+      "bank_details_present",
+      "transactional_mail_configuration",
+      "admin_account_exists",
+      "outbox_migration_installed"
+    ],
+    "current_flags": {
+      "bank_transfer_switch_enabled": false,
+      "bank_submissions_enabled": false,
+      "transactional_mail_enabled": false
+    },
+    "counts": {
+      "admins": 0,
+      "pending_email_deliveries": null,
+      "failed_email_deliveries": null
+    },
+    "operator_evidence_required": [
+      "fresh backup and restore verification",
+      "approved bank beneficiary/account verification",
+      "explicit administrator identity/role approval and secure access controls",
+      "SMTP provider and inbox verification",
+      "scheduler/monitoring and incident procedures",
+      "owner-approved policies and support details"
+    ]
+  },
+  "dependency_audits": {
+    "composer": {
+      "exit_code": 0,
+      "advisory_package_count": 0,
+      "abandoned_package_count": 0,
+      "query_error": false
+    },
+    "npm": {
+      "exit_code": 0,
+      "counts": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "query_error": false
+    }
+  },
+  "focused_tests": {
+    "passed": 47,
+    "assertions": 447,
+    "seconds": 6.51,
+    "database": "sqlite :memory:",
+    "classes": [
+      "LaunchStatusTest",
+      "ManualBankPaymentTest",
+      "TransactionalEmailTest"
+    ],
+    "smtp": "loopback-only sink; no external delivery"
+  },
+  "composer_validate": "passed",
+  "pint": "passed",
+  "frontend_checks_this_step": "not rerun; no application/UI changes; prior navbar task typecheck/build and desktop/mobile QA passed",
+  "preservation": {
+    "database_unchanged": true,
+    "application_and_ui_source_unchanged": true,
+    "stored_assets_unchanged": true,
+    "changed_items": []
+  },
+  "remaining_blockers": [
+    "chosen hosting/domain/deployment identity and release pipeline",
+    "patched PHP web and CLI runtime verification",
+    "supported exact database target and MySQL 8.4 rehearsal; local MariaDB 1558 remains unresolved",
+    "HTTPS/proxy/cookie and canonical-host verification",
+    "persistent public/private storage, effective upload limits and capacity QA",
+    "encrypted off-host backup, key custody, agreed RPO/RTO and target restore drill",
+    "outbox migration on separately approved target",
+    "single scheduler, delivery/backlog/readiness monitoring and incident ownership",
+    "external TLS SMTP, sender/DNS and inbox verification",
+    "separate named-admin/secure-access and real-bank activation approvals",
+    "owner-approved policies and support details"
+  ],
+  "artifacts": [
+    "docs/milestone-7-step-5.md",
+    "docs/production-deployment-runbook.md"
+  ],
+  "sources": [
+    "https://laravel.com/docs/12.x/deployment",
+    "https://laravel.com/docs/12.x/scheduling",
+    "https://mariadb.com/docs/server/reference/error-codes/mariadb-error-codes-1500-to-1599/e1558",
+    "https://mariadb.com/docs/server/clients-and-utilities/deployment-tools/mariadb-upgrade",
+    "https://mariadb.org/about/#maintenance-policy",
+    "https://www.php.net/archive/2026.php",
+    "https://www.php.net/supported-versions.php",
+    "https://nodejs.org/en/about/previous-releases"
+  ]
+}

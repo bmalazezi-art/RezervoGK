@@ -1,0 +1,41 @@
+{
+    "date": "2026-10-21",
+    "server": "10.4.28-MariaDB",
+    "schema": "rezervogk_m5_20261021_2a70389a87c5",
+    "account_host": "127.0.0.1",
+    "existing_users_modified": false,
+    "existing_schemas_modified": false,
+    "migration_exit_code": 0,
+    "counts": {
+        "migrations": 6,
+        "profiles": 4,
+        "availability_dates": 5,
+        "tables": 16
+    },
+    "constraints_verified": [
+        "json_languages",
+        "date_search",
+        "unique_date",
+        "foreign_key",
+        "cascade_delete",
+        "transaction_rollback"
+    ],
+    "account_isolation_verified": true,
+    "environment_updated_after_checks": true,
+    "oracle_mysql_8_verified": false,
+    "regression_tests": {
+        "database": "SQLite :memory:",
+        "passed": 83,
+        "assertions": 866,
+        "duration_seconds": 6.83
+    },
+    "normal_laravel_connection_verified": true,
+    "migration_status_all_ran": true,
+    "browser_verified": [
+        "guest home",
+        "city/date search",
+        "public profile/calendar"
+    ],
+    "schema_grant_wildcards_escaped": true,
+    "lookalike_schema_denied": true
+}

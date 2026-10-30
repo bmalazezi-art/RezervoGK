@@ -1,0 +1,19 @@
+services:
+  mysql:
+    image: mysql:8.4
+    ports:
+      - "127.0.0.1:${DB_PORT:-3306}:3306"
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-rezervogk}
+      MYSQL_USER: ${DB_USERNAME:-rezervogk}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-rezervogk_local}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_local}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", 'MYSQL_PWD="$$MYSQL_PASSWORD" mysqladmin ping -h 127.0.0.1 -u "$$MYSQL_USER" --silent']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+volumes:
+  mysql_data:

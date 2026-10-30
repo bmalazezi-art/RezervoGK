@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-22",
+  "milestone": "M7 Step 2",
+  "status": "complete",
+  "step_3_started": false,
+  "php_tests": {
+    "passed": 165,
+    "assertions": 2195,
+    "database": "sqlite :memory:",
+    "seconds": 30.85
+  },
+  "typecheck": "passed",
+  "build": {
+    "status": "passed",
+    "modules": 798,
+    "seconds": 17.93
+  },
+  "pint": "passed",
+  "composer_validate": "passed",
+  "existing_database_fingerprint": "unchanged",
+  "environment_fingerprint": "unchanged",
+  "live_bank_configured": false,
+  "live_admins": 0,
+  "original_figma_css": "byte-identical",
+  "browser": {
+    "preview": "http://127.0.0.1:8008",
+    "database": "existing disposable SQLite QA file",
+    "viewports": [
+      "1280x720",
+      "390x844",
+      "320x740"
+    ],
+    "database_writes_submitted": false,
+    "signup": "local first step only; policy link opened; no registration submitted",
+    "physical_mobile_and_safari": "unverified"
+  },
+  "mysql": {
+    "local": "MariaDB 10.4.28; no 1045 on read-only check",
+    "oracle_mysql_8_4": "unverified"
+  },
+  "existing_database_baseline": "fresh read-only audit-start snapshot; older currency-task snapshot already differed before this audit",
+  "preserved_features": [
+    "multi-currency pricing and scoped filters",
+    "weekly and dated availability",
+    "trial and subscription eligibility",
+    "fixed EUR bank payments and private receipts"
+  ],
+  "confirmed_fixes": [
+    "help/policy accuracy for weekly hours and currencies",
+    "unsupported homepage reservation and browse quality wording",
+    "Albanian singular result count"
+  ]
+}

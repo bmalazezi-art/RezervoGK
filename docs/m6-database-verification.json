@@ -1,0 +1,59 @@
+{
+    "date": "2026-10-21",
+    "engine": "10.4.28-MariaDB",
+    "schema": "rezervogk_m5_20261021_2a70389a87c5",
+    "additive_migration_exit": 0,
+    "counts": {
+        "rezervogk_m5_20261021_2a70389a87c5.cache": 0,
+        "rezervogk_m5_20261021_2a70389a87c5.cache_locks": 0,
+        "rezervogk_m5_20261021_2a70389a87c5.cities": 4,
+        "rezervogk_m5_20261021_2a70389a87c5.countries": 3,
+        "rezervogk_m5_20261021_2a70389a87c5.failed_jobs": 0,
+        "rezervogk_m5_20261021_2a70389a87c5.goalkeeper_availabilities": 5,
+        "rezervogk_m5_20261021_2a70389a87c5.goalkeeper_contacts": 4,
+        "rezervogk_m5_20261021_2a70389a87c5.goalkeeper_profile_match_format": 8,
+        "rezervogk_m5_20261021_2a70389a87c5.goalkeeper_profiles": 4,
+        "rezervogk_m5_20261021_2a70389a87c5.job_batches": 0,
+        "rezervogk_m5_20261021_2a70389a87c5.jobs": 0,
+        "rezervogk_m5_20261021_2a70389a87c5.match_formats": 3,
+        "rezervogk_m5_20261021_2a70389a87c5.migrations": 7,
+        "rezervogk_m5_20261021_2a70389a87c5.password_reset_tokens": 0,
+        "rezervogk_m5_20261021_2a70389a87c5.sessions": 0,
+        "rezervogk_m5_20261021_2a70389a87c5.users": 0
+    },
+    "total_migrations": 7,
+    "oracle_mysql_8_verified": false,
+    "initial_snapshot_note": "Initial comparison incorrectly included the expected new migration-history row because table names were schema-qualified. No application-record discrepancy was identified; users table contains no existing rows.",
+    "existing_user_rows_before_and_after": 0,
+    "m5_fixture_counts_preserved": true,
+    "original_migration_history_rows_preserved": true,
+    "additive_columns_present": true,
+    "regression_tests": {
+        "database": "SQLite :memory:",
+        "passed": 96,
+        "assertions": 1328,
+        "duration_seconds": 12.66
+    },
+    "native_expiry_boundary_cases_passed": 6,
+    "native_trial_fixture_rolled_back": true,
+    "browser_qa": {
+        "preview": "new SQLite m6-preview.sqlite on port 8006",
+        "active_days": 30,
+        "expired_days": 0,
+        "expired_direct_url": 404,
+        "expired_date_search_results": 0,
+        "expired_owner_login_and_edit": true,
+        "expired_owner_availability_save": true,
+        "mobile_width": 390,
+        "mobile_panel_width": 354,
+        "responsive_grid_fix_verified": true
+    },
+    "checks": {
+        "php_tests": "96 passed / 1328 assertions",
+        "typescript": "passed",
+        "production_build": "passed, 792 modules",
+        "pint": "passed",
+        "composer_validate_strict": "passed",
+        "original_css_byte_identical": true
+    }
+}

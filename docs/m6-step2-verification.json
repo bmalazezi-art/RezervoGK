@@ -1,0 +1,54 @@
+{
+    "date": "2026-10-21",
+    "engine": "10.4.28-MariaDB",
+    "migration_exit": 0,
+    "existing_data_hashes_preserved": true,
+    "existing_admins_promoted": false,
+    "live_bank_enabled": false,
+    "migrations": 8,
+    "oracle_mysql_8_verified": false,
+    "native_concurrent_approvals": {
+        "workers": 2,
+        "passed": true,
+        "subscription_rows_for_payment": 1,
+        "approval_audits_for_payment": 1,
+        "duration_seconds": 2592000
+    },
+    "actual_receipt_isolation": {
+        "outside_web_and_generic_local_storage": true,
+        "file_owner_only_permissions": true,
+        "standalone_disk_has_no_serve_route": true
+    },
+    "final_regression_tests": {
+        "passed": 114,
+        "assertions": 1588,
+        "database": "SQLite :memory:",
+        "seconds": 13.08
+    },
+    "typescript": "passed",
+    "production_build": "passed; 795 modules",
+    "pint": "passed",
+    "composer_validate_strict": "passed",
+    "existing_data_and_roles_unchanged_during_final_qa": true,
+    "live_admin_count": 0,
+    "live_payment_tables_empty": true,
+    "css_byte_identical": true,
+    "browser_qa": {
+        "isolated_mariadb_port": 8007,
+        "keeper_pending_inactive": true,
+        "keeper_admin_page_denied": 403,
+        "authorized_receipt_download": true,
+        "admin_approval_and_rejection": true,
+        "approved_keeper_public_profile": true,
+        "keeper_history_and_expiry": true,
+        "mobile_width": 390,
+        "keeper_panel_width": 354,
+        "admin_panel_width": 354,
+        "bank_details": "dummy QA only",
+        "real_transfers_made": false
+    },
+    "confirmed_continuation_fixes": [
+        "Exclude hidden approval-only fields from rejection validation",
+        "Format payment/audit dates explicitly as day.month.year in Europe/Belgrade instead of browser locale fallback"
+    ]
+}

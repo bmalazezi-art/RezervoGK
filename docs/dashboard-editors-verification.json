@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-22",
+  "scope": "dashboard photo and weekly editor fixes; no new milestone",
+  "php_tests": {
+    "passed": 201,
+    "assertions": 2456,
+    "seconds": 31.06,
+    "database": "sqlite :memory:"
+  },
+  "typecheck": "passed",
+  "build": {
+    "status": "passed",
+    "modules": 800,
+    "seconds": 6.22
+  },
+  "pint": "passed",
+  "composer_validate": "passed",
+  "shell_syntax": "passed",
+  "browser": {
+    "preview": "http://127.0.0.1:8008",
+    "database": "existing disposable SQLite",
+    "widths": [
+      1280,
+      320,
+      390
+    ],
+    "photo_refresh_persistence": true,
+    "public_photo_cards_and_profile": true,
+    "large_http_upload_bytes": 2645153,
+    "weekly_overnight_save_remove_validation": true
+  },
+  "php_upload_limits": {
+    "before": "2M upload / 8M POST",
+    "project_scoped": "5M upload / 8M POST",
+    "global_php_ini_changed": false,
+    "requires_server_restart": true
+  },
+  "existing_env_and_original_css": "unchanged",
+  "existing_public_file_hashes": "unchanged",
+  "retained_database": "agent read-only; concurrent profile/dated-availability changes observed and left intact",
+  "bank_settings_and_roles": "unchanged",
+  "new_migrations": false,
+  "new_dependencies": false
+}

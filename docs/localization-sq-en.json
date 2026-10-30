@@ -1,0 +1,52 @@
+{
+  "completed": "2026-10-23",
+  "defaultLocale": "sq",
+  "supportedLocales": [
+    "sq",
+    "en"
+  ],
+  "englishCatalogEntries": 612,
+  "checks": {
+    "backendTests": 217,
+    "backendAssertions": 2980,
+    "frontendTests": 7,
+    "typescript": "passed",
+    "build": "passed",
+    "buildWarning": "main chunk exceeds 500 kB before gzip",
+    "pint": "passed",
+    "mobilePublicAuthChecks": 52,
+    "mobileWidths": [
+      320,
+      390
+    ],
+    "desktopWidth": 1280,
+    "loopbackSmtpLocales": [
+      "sq",
+      "en"
+    ],
+    "loopbackSmtpMessagesPerLocale": [
+      "password reset",
+      "approval",
+      "rejection"
+    ]
+  },
+  "preservation": {
+    "retainedDatabaseFingerprint": "unchanged",
+    "env": "unchanged",
+    "originalFigmaCss": "unchanged",
+    "dashboardEditorCss": "unchanged",
+    "existingPublicAssetBaseline": "unchanged",
+    "retainedAdmins": 0,
+    "retainedPayments": 0,
+    "retainedSubscriptions": 0,
+    "liveBankConfigured": false,
+    "transactionalMailEnabled": false,
+    "schemaChanges": false
+  },
+  "limitations": [
+    "Native date/time pickers follow browser/OS preferences; application-rendered dates and times follow SQ/EN.",
+    "Real SMTP delivery has not been enabled or verified.",
+    "Existing email outbox migration is still pending on the retained database.",
+    "Draft policies/support details and production infrastructure readiness require the existing launch work."
+  ]
+}

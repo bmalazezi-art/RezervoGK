@@ -1,0 +1,22 @@
+{
+    "date": "2026-10-25",
+    "engine": "10.4.28-MariaDB",
+    "installed_migrations": 10,
+    "outbox_installed": false,
+    "publication_controls_installed": true,
+    "users": 1,
+    "profiles": 5,
+    "admins": 0,
+    "payments": 0,
+    "subscriptions": 0,
+    "public_owned_profiles": 1,
+    "public_unclaimed_demos": 0,
+    "bank_submissions_enabled": false,
+    "transactional_mail_enabled": false,
+    "app_views": 0,
+    "app_triggers": 0,
+    "app_proc_records": 0,
+    "app_event_records": 0,
+    "routine_catalog_available": false,
+    "routine_catalog_error": 1558
+}

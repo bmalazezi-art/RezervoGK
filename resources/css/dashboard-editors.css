@@ -1,0 +1,290 @@
+/* Scoped photo/weekly editors; the original Figma stylesheet is unchanged. */
+.dashboard-page .photo-editor,
+.dashboard-page .weekly-editor { min-width: 0; }
+.dashboard-page .photo-editor .panel-head > div,
+.dashboard-page .weekly-editor .panel-head > div { min-width: 0; }
+.dashboard-page .photo-editor .panel-head svg,
+.dashboard-page .weekly-editor .panel-head svg { flex: 0 0 auto; color: #607f08; }
+.dashboard-page .photo-editor-body { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 22px; padding-top: 20px; align-items: start; }
+.dashboard-page .photo-editor-preview { position: relative; min-width: 0; }
+.dashboard-page .photo-editor-preview img { width: 132px; height: 152px; border-radius: 11px; object-fit: cover; background: var(--cream); border: 1px solid var(--line); }
+.dashboard-page .photo-editor-preview > span { display: block; color: var(--muted); font-size: 10px; line-height: 1.5; margin-top: 7px; }
+.dashboard-page .photo-editor-controls { min-width: 0; }
+.dashboard-page .photo-editor-controls > p,
+.dashboard-page .editor-intro { font-size: 12px; line-height: 1.6; margin: 0 0 12px; }
+.dashboard-page .photo-editor-controls .editor-hint,
+.dashboard-page .weekly-editor .editor-hint { font-size: 11px; line-height: 1.6; color: var(--muted); margin: 0 0 12px; }
+.dashboard-page .photo-editor-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0 12px; }
+.dashboard-page .photo-editor-actions .btn { font-size: 11px; padding: 0 14px; }
+.dashboard-page .photo-editor .photo-filename { font-size: 11px; overflow-wrap: anywhere; margin-bottom: 12px; }
+.dashboard-page .photo-remove { display: flex; align-items: center; gap: 8px; font-size: 11px; min-height: 36px; cursor: pointer; }
+.dashboard-page .photo-remove input,
+.dashboard-page .weekly-editor-day input { width: 18px; height: 18px; margin: 0; accent-color: var(--navy); flex: 0 0 auto; }
+.dashboard-page .editor-feedback { font-size: 11px; line-height: 1.6; margin: 12px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--cream); overflow-wrap: anywhere; }
+.dashboard-page .editor-success { color: #365b12; background: #eef6df; }
+.dashboard-page .editor-error,
+.dashboard-page .photo-editor [role="alert"],
+.dashboard-page .weekly-editor [role="alert"] { color: #9b3029; }
+.dashboard-page .photo-editor small[role="alert"],
+.dashboard-page .weekly-editor small[role="alert"] { display: block; font-size: 11px; line-height: 1.5; margin-top: 7px; }
+.dashboard-page .photo-editor .btn:disabled,
+.dashboard-page .weekly-editor .btn:disabled { cursor: default; opacity: .6; transform: none; }
+.dashboard-page .profile-editor .profile-edit-body { grid-template-columns: minmax(0, 1fr); }
+.dashboard-page .weekly-editor .editor-intro { color: var(--muted); margin-top: 16px; }
+.dashboard-tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.dashboard-tabs button { flex: 0 0 auto; border: 0; border-bottom: 2px solid transparent; padding: 12px 14px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; }
+.dashboard-tabs button.active { border-color: var(--green-dark); color: var(--ink); }
+.dashboard-section { min-height: 0; padding-top: 22px; padding-bottom: 80px; }
+.dashboard-overview { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); gap: 16px; align-items: stretch; }
+.dashboard-overview > .panel { min-width: 0; margin-bottom: 0; }
+.overview-analytics { grid-column: 1 / -1; }
+.analytics-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; padding-top: 14px; }
+.analytics-metrics > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 12px; border-radius: 10px; background: #f5f8f2; }
+.analytics-metrics strong { color: var(--ink); font: 800 22px Manrope, sans-serif; }
+.analytics-metrics span, .analytics-empty { color: var(--muted); font-size: 10px; line-height: 1.5; }
+.analytics-empty { margin: 12px 0 0; }
+.dashboard-overview .panel > p { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.dashboard-overview .overview-profile { display: flex; flex-direction: column; align-items: flex-start; }
+.overview-profile-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; }
+.overview-profile-heading > span:first-child { color: var(--muted); font-size: 10px; letter-spacing: .8px; font-weight: 700; }
+.overview-profile .overview-status-badge { padding: 6px 9px; border-radius: 99px; background: #f2f4f1; color: #47534d; font-size: 10px; font-weight: 700; }
+.overview-profile .overview-status-badge.is-active { background: #edf6d7; color: #395b08; }
+.dashboard-overview .overview-profile h2 { margin: 20px 0 7px; font-size: 22px; }
+.overview-profile .overview-profile-note { margin-top: -4px; }
+.dashboard-overview .overview-profile .btn { margin-top: auto; }
+.overview-upcoming-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 8px; margin: 15px 0 12px; }
+.overview-upcoming-date { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 5px; min-width: 0; min-height: 54px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: #fbfcfa; color: var(--ink); text-align: left; cursor: pointer; }
+.overview-upcoming-date:hover { border-color: #a4c943; background: #f5fadf; }
+.overview-upcoming-date strong { font-size: 10px; }
+.overview-upcoming-date span { color: #52645d; font-size: 10px; font-variant-numeric: tabular-nums; }
+.overview-availability .text-link { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; border: 0; background: transparent; color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer; }
+.dashboard-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.dashboard-settings > .account-delete { grid-column: 1 / -1; min-width: 0; margin: 8px 0 0; padding: 22px; border: 1px solid #efd8d5; background: #fff; }
+.account-delete-heading { display: flex; align-items: flex-start; gap: 14px; padding-bottom: 18px; border-bottom: 1px solid #f0e3e1; }
+.account-delete-icon { display: grid; place-items: center; flex: 0 0 42px; width: 42px; height: 42px; border-radius: 12px; background: #fff0ee; color: #a63d35; font-size: 24px; font-weight: 800; }
+.account-delete-heading > div { min-width: 0; }
+.account-delete-eyebrow { display: block; margin-bottom: 5px; color: #9c4039; font-size: 9px; font-weight: 800; letter-spacing: 1.1px; }
+.account-delete-heading h2 { margin: 0; color: var(--ink); font-size: 18px; letter-spacing: -.3px; }
+.account-delete-heading p { margin: 5px 0 0; color: #6a7772; font-size: 11px; line-height: 1.5; }
+.account-delete-content { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); gap: 22px; align-items: center; padding-top: 18px; }
+.account-delete-summary h3 { margin: 0 0 7px; color: var(--ink); font-size: 12px; }
+.account-delete-summary p { margin: 0 0 9px; color: #586861; font-size: 11px; line-height: 1.55; }
+.account-delete-summary ul { display: grid; gap: 6px; margin: 0; padding-left: 17px; color: #586861; font-size: 10px; line-height: 1.5; }
+.account-delete-action { display: grid; gap: 12px; padding: 14px; border: 1px solid #f0e3e1; border-radius: 11px; background: #fff; }
+.dashboard-settings .account-delete .account-delete-confirm { display: flex; flex-direction: row; align-items: flex-start; gap: 10px; min-height: 44px; margin: 0; color: #394841; font-size: 11px; line-height: 1.5; cursor: pointer; }
+.dashboard-settings .account-delete .account-delete-confirm input { flex: 0 0 19px; width: 19px; height: 19px; margin: 1px 0 0; padding: 0; accent-color: #a63d35; cursor: pointer; }
+.dashboard-settings .account-delete .account-delete-confirm:focus-within { outline: 3px solid #c8f542; outline-offset: 3px; border-radius: 3px; }
+.dashboard-settings .account-delete .account-delete-button { justify-self: start; min-height: 44px; padding: 0 17px; border: 1px solid #a63d35; background: #a63d35; color: #fff; font-size: 11px; font-weight: 800; }
+.dashboard-settings .account-delete .account-delete-button:hover:not(:disabled) { border-color: #852e28; background: #852e28; }
+.dashboard-settings .account-delete .account-delete-button:disabled { cursor: not-allowed; opacity: .52; }
+.dashboard-settings .account-delete [role="alert"] { margin: -6px 0 0; color: #9c3029; font-size: 10px; }
+.dashboard-settings > .panel label, .account-password > label { display: flex; flex-direction: column; gap: 7px; margin: 14px 0; font-size: 11px; font-weight: 700; }
+.dashboard-settings input { min-width: 0; height: 42px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--ink); font-size: 12px; font-weight: 500; }
+.account-password .btn { margin-top: 4px; }
+.settings-card-intro { margin: 13px 0 16px; color: #586861; font-size: 11px; line-height: 1.5; }
+.account-settings-language { margin-top: 22px; padding-top: 15px; border-top: 1px solid var(--line); }
+.account-settings-language > span, .password-rules > strong { color: var(--ink); font-size: 11px; font-weight: 700; }
+.account-settings-language > strong { display: block; margin-top: 8px; color: #34443d; font-size: 11px; }
+.account-settings-language small { display: block; margin-top: 6px; color: #586861; font-size: 10px; line-height: 1.5; }
+.password-rules { margin: 4px 0 16px; padding: 12px 14px; border-radius: 9px; background: #f1f6ea; }
+.password-rules ul { display: grid; gap: 5px; margin: 8px 0 0; padding-left: 17px; color: #52645d; font-size: 10px; line-height: 1.4; }
+.settings-save-success { margin: 11px 0 0; color: #365b12; font-size: 11px; font-weight: 700; }
+.account-password [role="alert"] { margin-top: 10px; }
+.profile-field-group { margin-top: 25px; padding-top: 18px; border-top: 1px solid var(--line); }
+.profile-editor > .profile-field-group:first-of-type { margin-top: 12px; padding-top: 0; border-top: 0; }
+.profile-field-heading h3 { margin: 0; color: var(--ink); font-size: 14px; letter-spacing: -.15px; }
+.profile-field-heading p { margin: 4px 0 0; color: #586861; font-size: 10px; line-height: 1.45; }
+.profile-field-group .form-grid { gap: 16px 22px; margin-top: 14px; }
+.profile-field-group .full-label { margin-top: 15px; }
+.profile-savebar { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 22px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 11px; background: #fbfcfa; }
+.profile-savebar > span { color: #365b12; font-size: 11px; font-weight: 700; }
+.profile-savebar.is-dirty > span { color: #795a0b; }
+.profile-savebar button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 8px; background: #c8f542; color: #071a18; font-size: 11px; font-weight: 800; cursor: pointer; }
+.profile-savebar button:disabled { cursor: default; opacity: .58; }
+.availability-workspace { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, .9fr); gap: 16px; align-items: start; }
+.availability-window-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 20px; }
+.availability-window-head > div:first-child { display: flex; flex-direction: column; gap: 4px; }
+.availability-window-head strong { font-size: 12px; }
+.availability-window-head small { color: var(--muted); font-size: 10px; }
+.availability-window-head > div:last-child { display: flex; gap: 6px; }
+.availability-window-head .btn { min-width: 38px; min-height: 36px; padding: 0 9px; }
+.availability-window { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 7px; margin: 10px 0 20px; }
+.availability-window button { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; min-height: 72px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 9px; background: white; color: var(--ink); cursor: pointer; }
+.availability-window button.available { background: #f3f9e8; border-color: #dcebbd; }
+.availability-window button.unavailable { color: var(--muted); }
+.availability-window button.selected { outline: 2px solid var(--green-dark); outline-offset: 1px; }
+.availability-window button span, .availability-window button small { font-size: 9px; color: var(--muted); }
+.availability-window button strong { font-size: 15px; }
+.availability-controls { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.availability-controls > div { display: grid; grid-template-columns: auto auto; align-items: center; gap: 5px 12px; }
+.availability-controls > div > span { grid-column: 1 / -1; color: var(--muted); font-size: 10px; }
+.availability-controls > div > strong { font-size: 14px; }
+.availability-controls label { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; }
+.availability-controls input { width: 145px; height: 38px; padding: 7px; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--ink); }
+.availability-upcoming { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.availability-upcoming > strong { font-size: 11px; }
+.weekday-picker { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 7px; margin: 18px 0; }
+.weekday-picker label { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 48px; padding: 8px 6px; border: 1px solid var(--line); border-radius: 9px; background: white; color: var(--ink); cursor: pointer; }
+.weekday-picker label.selected { border-color: #c9e79a; background: #f3f9e8; color: #426500; }
+.weekday-picker label:focus-within { outline: 2px solid #607f08; outline-offset: 2px; }
+.weekday-picker input { width: 15px; height: 15px; margin: 0; accent-color: var(--green-dark); }
+.weekday-picker label span { font-size: 10px; font-weight: 700; }
+.weekly-day-hours { display: grid; grid-template-columns: minmax(150px, .8fr) minmax(0, 1.2fr); align-items: end; gap: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfa; }
+.weekly-day-hours > label, .weekly-day-time-fields label { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 10px; font-weight: 700; }
+.weekly-day-hours select, .weekly-day-time-fields input { width: 100%; min-width: 0; height: 42px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--ink); font-size: 13px; }
+.weekly-day-time-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.weekly-day-time-fields input { font-variant-numeric: tabular-nums; }
+.weekly-day-hours select:focus-visible, .weekly-day-time-fields input:focus-visible { outline: 2px solid #607f08; outline-offset: 2px; }
+.weekly-overnight { margin-top: 8px; }
+.weekly-editor-day-name { display: flex; align-items: center; font-size: 11px; }
+.editor-empty-state { margin: 0; padding: 14px; border-radius: 8px; background: var(--cream); color: var(--muted); font-size: 11px; }
+.dashboard-page .weekly-editor-rows { margin: 18px 0 16px; }
+.dashboard-page .weekly-editor-row { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(0, 125px) minmax(0, 125px); align-items: start; gap: 6px 14px; min-width: 0; margin: 0; padding: 12px 0; border: 0; border-bottom: 1px solid var(--line); }
+.dashboard-page .weekly-editor-row:first-child { padding-top: 0; }
+.dashboard-page .weekly-editor-day { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 60px; min-width: 0; font-size: 12px; font-weight: 700; cursor: pointer; }
+.dashboard-page .weekly-editor-day small { color: var(--muted); font-size: 9px; font-weight: 400; }
+.dashboard-page .weekly-editor-time { display: flex; flex-direction: column; min-width: 0; font-size: 10px; font-weight: 700; gap: 5px; }
+.dashboard-page .weekly-editor-time input { width: 100%; min-width: 0; max-width: 100%; height: 40px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--ink); font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.dashboard-page .weekly-editor-time input:disabled { background: var(--cream); color: var(--muted); opacity: .65; }
+.dashboard-page .weekly-editor-time input:focus-visible { outline: 2px solid #607f08; outline-offset: 2px; }
+.dashboard-page .weekly-row-note { grid-column: 2 / -1; min-width: 0; }
+.dashboard-page .weekly-overnight { display: flex; align-items: center; gap: 5px; color: #607f08; font-size: 10px; }
+.dashboard-page .weekly-editor-footer { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-top: 12px; border-top: 1px solid var(--line); }
+.dashboard-page .weekly-editor-footer .editor-hint { max-width: 290px; margin: 0; }
+.dashboard-page .weekly-editor-footer .btn { flex-shrink: 0; font-size: 11px; }
+@media (max-width: 600px) {
+  .dashboard-section { min-height: 0; padding-bottom: 48px; }
+  .dashboard-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; overflow: visible; }
+  .dashboard-tabs button { min-height: 44px; padding: 11px 8px; text-align: center; }
+  .dashboard-overview, .dashboard-settings, .availability-workspace { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-settings > .account-delete { grid-column: auto; margin-top: 2px; padding: 17px; }
+  .account-delete-content { grid-template-columns: minmax(0, 1fr); gap: 15px; }
+  .dashboard-settings .account-delete .account-delete-button { width: 100%; }
+  .analytics-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .overview-upcoming-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .availability-window { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .weekday-picker { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .availability-controls { align-items: stretch; flex-direction: column; }
+  .availability-controls > div { grid-template-columns: 1fr; }
+  .availability-controls > div > span { grid-column: auto; }
+  .availability-controls label { justify-content: space-between; }
+  .availability-controls input { width: min(55vw, 210px); }
+  .weekly-day-hours { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-page .photo-editor-body { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .profile-field-group { margin-top: 21px; padding-top: 15px; }
+  .profile-field-group .form-grid { grid-template-columns: minmax(0, 1fr); gap: 13px; }
+  .profile-savebar { align-items: stretch; flex-direction: column; }
+  .profile-savebar button { width: 100%; }
+  .dashboard-page .photo-editor-preview img { width: 132px; height: 152px; }
+  .dashboard-page .photo-editor-actions { flex-direction: column; }
+  .dashboard-page .photo-editor-actions .btn { width: 100%; }
+  .dashboard-page .weekly-editor-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 12px; padding: 13px 0; }
+  .dashboard-page .weekly-editor-day { grid-column: 1 / -1; min-height: 32px; }
+  .dashboard-page .weekly-editor-day small { margin-left: auto; }
+  .dashboard-page .weekly-row-note { grid-column: 1 / -1; }
+  .dashboard-page .weekly-editor-footer { flex-direction: column; align-items: stretch; gap: 14px; }
+  .dashboard-page .weekly-editor-footer .editor-hint { max-width: none; }
+}
+
+/* Focused goalkeeper availability editor */
+.dashboard-page .availability-editor { display: grid; gap: 16px; padding: 18px; border-radius: 20px; background: #f1f6ea; font-family: "Outfit", "DM Sans", sans-serif; }
+.availability-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 2px 4px 4px; }
+.availability-heading h1 { margin: 0 0 5px; font-size: 28px; letter-spacing: -.8px; }
+.availability-heading p { margin: 0; color: #52645d; font-size: 13px; line-height: 1.5; }
+.availability-count { flex: 0 0 auto; padding: 10px 14px; border-radius: 999px; background: #e5f4b8; color: #283b08; font-size: 11px; font-weight: 700; }
+.availability-editor-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: 16px; align-items: start; }
+.availability-card { min-width: 0; margin: 0; padding: 20px; border-radius: 20px; }
+.availability-card-heading { display: flex; align-items: flex-start; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.availability-card-heading > div { display: flex; align-items: flex-start; gap: 12px; }
+.availability-step { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #eaf3d5; color: #365b12; font-size: 10px; font-weight: 800; }
+.availability-card-heading h2 { margin: 1px 0 4px; font-size: 17px; letter-spacing: -.25px; }
+.availability-card-heading p { margin: 0; color: #586861; font-size: 11px; line-height: 1.45; }
+.availability-presets { display: flex; flex-wrap: wrap; gap: 7px; margin: 15px 0 12px; }
+.availability-presets button { min-height: 44px; padding: 0 11px; border: 1px solid #d5dfd4; border-radius: 9px; background: white; color: var(--ink); font-size: 10px; font-weight: 700; }
+.availability-presets button:hover { border-color: #8bbf1a; background: #f5fadf; }
+.availability-day-rows { border-top: 1px solid var(--line); }
+.availability-day-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 12px; min-height: 59px; padding: 7px 0; border-bottom: 1px solid #e8ece7; }
+.availability-day-identity { display: flex; align-items: center; gap: 10px; flex: 0 0 130px; min-height: 44px; }
+.availability-day-identity strong { font-size: 11px; }
+.availability-day-identity button { position: relative; display: flex; align-items: center; width: 48px; height: 44px; flex: 0 0 48px; padding: 0; border: 0; border-radius: 999px; background: transparent; }
+.availability-day-identity button::before { content: ""; position: absolute; left: 2px; top: 10px; width: 42px; height: 24px; border-radius: 999px; background: #d9e0d8; transition: background .15s; }
+.availability-day-identity button span { position: absolute; left: 5px; top: 13px; width: 18px; height: 18px; border-radius: 50%; background: white; box-shadow: 0 1px 3px #17251d33; transition: transform .15s; }
+.availability-day-identity button[aria-checked="true"]::before { background: #c8f542; }
+.availability-day-identity button[aria-checked="true"] span { transform: translateX(18px); background: #17251d; }
+.availability-day-identity button:focus-visible, .availability-presets button:focus-visible, .availability-date-cell:focus-visible, .availability-date-detail button:focus-visible, .availability-savebar button:focus-visible { outline: 3px solid #365b12; outline-offset: 2px; }
+.availability-time-range { display: grid; grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr); align-items: end; gap: 6px; flex: 1 1 245px; min-width: 0; }
+.availability-time-range label { display: flex; flex-direction: column; gap: 4px; min-width: 0; color: #52645d; font-size: 9px; font-weight: 700; }
+.availability-time-range select { width: 100%; min-width: 0; height: 40px; padding: 0 8px; border: 1px solid #d7e0d7; border-radius: 8px; background: white; color: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
+.availability-time-range select:focus-visible { outline: 3px solid #365b12; outline-offset: 2px; }
+.availability-to { align-self: end; padding-bottom: 12px; color: #586861; font-size: 10px; text-align: center; }
+.availability-not-available { margin-left: 0; color: #64736d; font-size: 10px; }
+.availability-overnight, .availability-inline-error { grid-column: 1 / -1; margin: 0; font-size: 10px; line-height: 1.4; }
+.availability-overnight { color: #365b12; }
+.availability-inline-error { color: #9b3029; }
+.availability-tip { margin: 13px 0 0; padding: 10px 11px; border-radius: 9px; background: #f1f6ea; color: #4c5d56; font-size: 10px; line-height: 1.5; }
+.availability-legend { display: flex; flex-wrap: wrap; gap: 8px 13px; padding: 14px 0 12px; }
+.availability-legend > span { display: inline-flex; align-items: center; gap: 6px; color: #34443d; font-size: 9px; white-space: nowrap; }
+.availability-legend i { display: inline-block; width: 12px; height: 12px; border: 1px solid #c8d3c8; border-radius: 4px; background: white; }
+.availability-legend .legend-usual { border-color: #a7c94e; background: #c8f542; }
+.availability-legend .legend-off { background: #f3f5f2; }
+.availability-legend .legend-day-off { border: 1px dashed #bd4f48; }
+.availability-legend .legend-extra { border: 1px dashed #5b8d20; background: #f4f9e9; }
+.availability-calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+.availability-weekday-label { display: grid; place-items: center; min-height: 27px; color: #53635d; font-size: 9px; font-weight: 700; }
+.availability-calendar-blank { min-height: 64px; }
+.availability-date-cell { display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; min-width: 0; min-height: 68px; padding: 6px 5px; border: 1px solid #dce3dc; border-radius: 8px; background: white; color: var(--ink); text-align: left; }
+.availability-date-cell.status-usual { border-color: #a7c94e; background: #c8f542; }
+.availability-date-cell.status-off { background: #f3f5f2; color: #485750; }
+.availability-date-cell.status-day_off { border: 1px dashed #bd4f48; background: #fff8f7; }
+.availability-date-cell.status-extra { border: 1px dashed #5b8d20; background: #f4f9e9; }
+.availability-date-cell.is-selected { box-shadow: 0 0 0 2px #071a18; }
+.availability-date-tag { width: 100%; min-height: 11px; overflow: hidden; color: #34443d; font-size: 8px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.availability-date-cell strong { font-size: 15px; line-height: 1.1; }
+.availability-date-status { width: 100%; color: #34443d; font-size: 8px; line-height: 1.2; overflow-wrap: anywhere; }
+.availability-date-detail { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding: 12px 0 0; border-top: 1px solid var(--line); }
+.availability-date-detail > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.availability-date-detail > div > span { color: #596962; font-size: 10px; }
+.availability-date-detail strong { font-size: 11px; }
+.availability-date-detail button { min-height: 44px; padding: 0 12px; border: 1px solid #d5dfd4; border-radius: 9px; background: white; color: var(--ink); font-size: 10px; font-weight: 700; }
+.availability-date-detail button:hover { border-color: #8bbf1a; background: #f5fadf; }
+.availability-exception-summary { margin: 11px 0 0; color: #586861; font-size: 10px; line-height: 1.45; }
+.availability-savebar { position: sticky; top: 88px; z-index: 12; display: flex; grid-column: 1 / -1; align-items: center; justify-content: space-between; gap: 18px; padding: 15px 18px; border: 1px solid #dce3dc; border-radius: 16px; background: white; box-shadow: 0 5px 18px rgba(7, 26, 24, .08); }
+.availability-savebar > div { display: flex; flex-direction: column; gap: 4px; }
+.availability-savebar strong { color: #365b12; font-size: 12px; }
+.availability-savebar.is-dirty strong { color: #795a0b; }
+.availability-savebar span { color: #586861; font-size: 10px; }
+.availability-savebar .availability-save-error { color: #9b3029; }
+.availability-savebar button { min-height: 48px; padding: 0 19px; border: 0; border-radius: 9px; background: #c8f542; color: #071a18; font-size: 12px; font-weight: 800; }
+.availability-savebar button:disabled { cursor: default; opacity: .58; }
+@media (max-width: 920px) {
+  .availability-editor-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 600px) {
+  .dashboard-page .availability-editor { gap: 12px; padding: 12px; }
+  .availability-heading { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .availability-heading h1 { font-size: 24px; }
+  .availability-heading p { font-size: 12px; }
+  .availability-count { font-size: 10px; }
+  .availability-card { padding: 14px 11px; }
+  .availability-card-heading h2 { font-size: 15px; }
+  .availability-presets { gap: 5px; }
+  .availability-presets button { min-height: 44px; padding: 0 8px; font-size: 9px; }
+  .availability-day-row { gap: 5px 8px; padding: 7px 0; }
+  .availability-day-identity { flex: 1 1 100%; min-height: 38px; }
+  .availability-day-identity button { height: 44px; }
+  .availability-time-range { flex-basis: 100%; grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr); padding-left: 2px; }
+  .availability-not-available { margin-left: 58px; }
+  .availability-legend { gap: 7px 9px; }
+  .availability-legend > span { font-size: 8px; }
+  .availability-calendar { gap: 3px; }
+  .availability-calendar-blank, .availability-date-cell { min-height: 64px; }
+  .availability-date-cell { padding: 5px 3px; border-radius: 7px; }
+  .availability-date-cell strong { font-size: 13px; }
+  .availability-date-tag, .availability-date-status { font-size: 7px; }
+  .availability-date-detail { align-items: stretch; flex-direction: column; }
+  .availability-date-detail button { width: 100%; }
+  .availability-savebar { align-items: center; flex-direction: row; padding: 10px 12px; }
+  .availability-savebar.is-dirty { position: sticky; z-index: 20; top: 76px; width: 100%; box-shadow: 0 8px 24px rgba(7, 26, 24, .14); }
+  .availability-savebar button { width: auto; min-height: 46px; flex: 0 0 auto; padding: 0 14px; }
+  .availability-savebar span { font-size: 9px; }
+}

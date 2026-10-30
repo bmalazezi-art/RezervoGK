@@ -1,0 +1,176 @@
+{
+  "date": "2026-10-22",
+  "milestone": "M7 Step 4",
+  "status": "preparation and isolated verification complete; activation blocked",
+  "concurrent_historical_changes": {
+    "tables": [
+      "goalkeeper_profiles",
+      "goalkeeper_availabilities"
+    ],
+    "individual_field_history_available": false,
+    "stale_baseline_restored": false
+  },
+  "native_database_verification": {
+    "success": true,
+    "engine": "10.4.28-MariaDB",
+    "backup_directory": "/Users/maxtontech/Desktop/RezervoGk/storage/app/backups/m7-step4-20261022_162333_2d341c0f",
+    "retained_tables": 20,
+    "retained_rows": {
+      "cache": 0,
+      "cache_locks": 0,
+      "cities": 4,
+      "countries": 3,
+      "failed_jobs": 0,
+      "goalkeeper_availabilities": 10,
+      "goalkeeper_contacts": 5,
+      "goalkeeper_profile_match_format": 11,
+      "goalkeeper_profiles": 5,
+      "goalkeeper_weekly_hours": 5,
+      "job_batches": 0,
+      "jobs": 0,
+      "manual_payments": 0,
+      "match_formats": 3,
+      "migrations": 9,
+      "password_reset_tokens": 0,
+      "payment_audits": 0,
+      "sessions": 0,
+      "subscriptions": 0,
+      "users": 1
+    },
+    "source_stable_during_backup_and_qa": true,
+    "pre_migration_restore_exact": true,
+    "outbox_migration_isolated": true,
+    "migration_rerun_idempotent": true,
+    "empty_outbox_rollback_reapply_isolated": true,
+    "existing_rows_preserved": true,
+    "native_unique_1062": true,
+    "native_fk_1452": true,
+    "native_cascade": true,
+    "native_defaults": true,
+    "post_migration_restore_exact": true,
+    "asset_files_backed_up": 5,
+    "database_accounts_unchanged": true,
+    "retained_outbox_migration_applied": false,
+    "new_test_admins_created": 0,
+    "disposable_schemas_removed": true,
+    "original_schema_inventory_preserved": true
+  },
+  "final_preservation_checks": {
+    "retained_rows_match_fresh_backup": true,
+    "private_backup_permissions": true,
+    "temporary_credentials_removed": true,
+    "sql_backup_checksums_match": true,
+    "asset_checksums_match": true,
+    "missing_stored_photos": 0,
+    "invalid_country_currency_or_negative_prices": 0,
+    "invalid_weekly_hours": 0,
+    "views_in_app_schema": 0,
+    "admins": 0,
+    "bank_enabled": false,
+    "bank_configured": false,
+    "transactional_mail_enabled": false,
+    "outbox_in_retained_database": false
+  },
+  "launch_status": {
+    "read_only": true,
+    "configuration_checks_passed": false,
+    "activation_authorized": false,
+    "checks": {
+      "production_environment": false,
+      "debug_disabled": false,
+      "canonical_https_url": false,
+      "secure_session_cookie": false,
+      "http_only_session_cookie": true,
+      "bank_details_present": false,
+      "transactional_mail_configuration": false,
+      "private_receipts_outside_public_storage": true,
+      "admin_account_exists": false,
+      "outbox_migration_installed": false,
+      "database_available": true
+    },
+    "blocked_checks": [
+      "production_environment",
+      "debug_disabled",
+      "canonical_https_url",
+      "secure_session_cookie",
+      "bank_details_present",
+      "transactional_mail_configuration",
+      "admin_account_exists",
+      "outbox_migration_installed"
+    ],
+    "current_flags": {
+      "bank_transfer_switch_enabled": false,
+      "bank_submissions_enabled": false,
+      "transactional_mail_enabled": false
+    },
+    "counts": {
+      "admins": 0,
+      "pending_email_deliveries": null,
+      "failed_email_deliveries": null
+    },
+    "operator_evidence_required": [
+      "fresh backup and restore verification",
+      "approved bank beneficiary/account verification",
+      "explicit administrator identity/role approval and secure access controls",
+      "SMTP provider and inbox verification",
+      "scheduler/monitoring and incident procedures",
+      "owner-approved policies and support details"
+    ]
+  },
+  "focused_tests": {
+    "passed": 47,
+    "assertions": 447,
+    "seconds": 6.24,
+    "database": "sqlite :memory:",
+    "classes": [
+      "LaunchStatusTest",
+      "ManualBankPaymentTest",
+      "TransactionalEmailTest"
+    ]
+  },
+  "smtp_qa": {
+    "loopback_sink": true,
+    "external_delivery": false
+  },
+  "typecheck": "passed",
+  "build": {
+    "status": "passed",
+    "modules": 800,
+    "seconds": 6.08
+  },
+  "pint": "passed",
+  "composer_validate": "passed",
+  "browser": {
+    "environment": "existing isolated synthetic SQLite preview, port 8008",
+    "normal_keeper_admin_access": 403,
+    "unconfigured_bank_reference_disabled": true,
+    "subscription_price": "EUR 7 / 30 days",
+    "dashboard_no_horizontal_overflow_width": 390,
+    "public_profile_no_horizontal_overflow_width": 320,
+    "profile_local_currency_photo_dated_and_overnight_weekly_hours": "preserved; read-only QA",
+    "form_edits": false
+  },
+  "ui_css_modified": false,
+  "environment_modified": false,
+  "real_admins_promoted": 0,
+  "live_bank_details_configured": false,
+  "live_payments_enabled": false,
+  "retained_migration_applied": false,
+  "database_limitations": {
+    "1045_recurred": false,
+    "routine_catalog_native_error": 1558,
+    "server_repair_attempted": false,
+    "oracle_mysql_84_verified": false
+  },
+  "remaining_activation_steps": [
+    "production engine/configuration and private storage verification",
+    "fresh deployment backup and isolated restore",
+    "apply additive outbox migration on approved target",
+    "explicit named admin authorization and secure administrative access",
+    "independently verified real bank details",
+    "authenticated TLS SMTP and controlled real inbox verification",
+    "scheduler/outbox monitoring and incident procedures",
+    "owner-reviewed policies and official support details",
+    "explicit final bank activation approval"
+  ]
+}

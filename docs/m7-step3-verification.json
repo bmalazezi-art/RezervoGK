@@ -1,0 +1,51 @@
+{
+  "date": "2026-10-22",
+  "milestone": "M7 Step 3",
+  "status": "implemented; production configuration/deployment pending",
+  "php_tests": {
+    "passed": 188,
+    "assertions": 2342,
+    "seconds": 25.75,
+    "database": "sqlite :memory:"
+  },
+  "transactional_email_tests": 23,
+  "smtp_qa": {
+    "transport": "real loopback-only SMTP sink",
+    "external_delivery": false,
+    "tls_required_rejects_plaintext": true,
+    "captured_mime_cleanup": true
+  },
+  "typecheck": "passed",
+  "build": {
+    "status": "passed",
+    "modules": 798,
+    "seconds": 10.89
+  },
+  "pint": "passed",
+  "composer_validate": "passed",
+  "retained_database_fingerprint": "unchanged",
+  "environment_fingerprint": "unchanged",
+  "original_css_fingerprint": "unchanged",
+  "live_mail_enabled": false,
+  "live_bank_configured": false,
+  "live_admins": 0,
+  "outbox_migration_applied_to_retained_database": false,
+  "browser": {
+    "synthetic_email_previews": [
+      "password reset",
+      "approval",
+      "rejection"
+    ],
+    "viewports": [
+      "1280x720",
+      "390x844"
+    ],
+    "real_tokens_in_evidence": false,
+    "actual_email_clients": "unverified"
+  },
+  "mysql": {
+    "local": "MariaDB 10.4.28 read-only access; no 1045",
+    "new_migration": "SQLite only; not applied to retained schemas",
+    "oracle_mysql": "unverified"
+  }
+}

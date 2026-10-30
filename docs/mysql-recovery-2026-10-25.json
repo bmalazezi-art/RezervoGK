@@ -1,0 +1,32 @@
+{
+    "date": "2026-10-25",
+    "restore_scope": "full application database SQL backup; no system schemas or grants",
+    "retained_database_mutations": false,
+    "grants_changed": false,
+    "payments_enabled": false,
+    "sql_restore_seconds": 0.389,
+    "backup_checksums_verified": true,
+    "sql_statements_executed_only_in_new_database": 78,
+    "full_sql_backup_restore_verified": true,
+    "restored_tables": 20,
+    "restored_rows": 56,
+    "all_table_definitions_columns_rows_match_backup": true,
+    "restored_migration_records": 9,
+    "restored_foreign_keys_without_orphans": 14,
+    "pending_migrations_verified_on_restore_only": [
+        "2026_10_22_000001_create_payment_email_deliveries",
+        "2026_10_24_000000_add_profile_publication_controls"
+    ],
+    "post_migration_original_columns_and_rows_preserved": true,
+    "migration_rerun_no_changes": true,
+    "qa_migration_ledger": 11,
+    "restored_visibility": {
+        "public_owned_profiles": 1,
+        "public_unclaimed_demos": 0
+    },
+    "complete": true,
+    "only_new_disposable_restore_database_removed": true,
+    "retained_source_schema_and_rows_unchanged": true,
+    "existing_schema_account_grant_inventories_unchanged": true,
+    "bank_submissions_enabled": false
+}

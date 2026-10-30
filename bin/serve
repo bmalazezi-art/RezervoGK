@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+# Keep the host's existing ini scan directory (empty includes PHP's compiled default).
+export PHP_INI_SCAN_DIR="${PHP_INI_SCAN_DIR:-}:$project_dir/tools/php"
+cd "$project_dir"
+exec php artisan serve --no-reload "$@"
