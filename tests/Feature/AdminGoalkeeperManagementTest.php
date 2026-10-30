@@ -120,8 +120,14 @@ class AdminGoalkeeperManagementTest extends TestCase
         $this->actingAs(User::factory()->create(['is_admin' => true]))->patch('/admin/goalkeepers/'.$profile->id.'/moderation', ['hidden' => true, 'reason' => 'short'])
             ->assertSessionHasErrors('reason');
         $this->actingAs(User::factory()->create())->get('/admin/goalkeepers/'.$profile->id)->assertForbidden();
-        $this->actingAs(User::factory()->create(['is_admin' => true]))->get('/admin/goalkeepers/'.$profile->id)
+        $admin = User::factory()->create(['is_admin' => true]);
+        AdminListingAudit::create([
+            'goalkeeper_profile_id' => $profile->id, 'actor_id' => $admin->id,
+            'action' => 'hidden', 'reason' => 'Reviewed a user report.', 'created_at' => now(),
+        ]);
+        $this->actingAs($admin)->get('/admin/goalkeepers/'.$profile->id)
             ->assertOk()->assertInertia(fn (Assert $page) => $page->component('AdminGoalkeeperDetails')
-                ->where('profile.name', 'Enis Hasani')->missing('profile.contact')->missing('profile.user.password'));
+                ->where('profile.name', 'Enis Hasani')->where('moderationHistory.0.reason', 'Reviewed a user report.')
+                ->missing('profile.contact')->missing('profile.user.password'));
     }
 }
