@@ -93,7 +93,7 @@ export function SearchBar({ onSearch, cities, countries, countryId = "", onCount
 
 export function ContactActions({ keeper, compact = false }: { keeper: Keeper; compact?: boolean }) {
   useLocale();
-  const message = encodeURIComponent(t("Përshëndetje :name! A je i lirë për një ndeshje futbolli? Çmimi në profilin tënd është :price.", { name: keeper.name, price: formatKeeperPrice(keeper) }));
+  const message = encodeURIComponent(t("Tung :goalkeeper_name, të pashë te Gjej portier. Mos je i lirë sot për një ndeshje, për me mbrojt? 😄", { goalkeeper_name: keeper.name }));
   const recordContact = (event: "whatsapp" | "phone") => {
     const xsrf = document.cookie.split("; ").find(cookie => cookie.startsWith("XSRF-TOKEN="))?.slice("XSRF-TOKEN=".length);
     void fetch(`/keepers/${keeper.id}/analytics`, {

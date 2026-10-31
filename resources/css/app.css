@@ -220,3 +220,59 @@ footer { background: var(--navy); color: white; padding: 70px max(5vw, 30px) 28p
   .policy-page .policy-section h2 { font-size: 16px; }
   .policy-page .policy-section p { font-size: 14px; line-height: 1.65; }
 }
+
+.information-page { padding-bottom: 72px; }
+.information-page .dash-top,
+.information-page .information-content { max-width: 1000px; }
+.information-page .dash-top { padding-top: 46px; padding-bottom: 24px; }
+.information-page .dash-top h1 { max-width: 760px; font-size: clamp(30px, 3.2vw, 38px); line-height: 1.18; letter-spacing: -1.4px; margin: 9px 0 8px; font-weight: 600; }
+.information-page .dash-top p { max-width: 760px; font-size: 13px; line-height: 1.65; }
+.information-page .information-content { padding-top: 0; }
+.information-page .information-section { padding: 22px 24px; margin-bottom: 12px; border-radius: 14px; }
+.information-page .information-section h2 { margin: 0 0 8px; font-size: 17px; line-height: 1.4; letter-spacing: -.2px; font-weight: 650; }
+.information-page .information-section p { margin: 0 0 10px; color: #344541; font-size: 14px; line-height: 1.7; font-weight: 400; overflow-wrap: anywhere; }
+.information-page .information-section p:last-child { margin-bottom: 0; }
+.information-page .information-section a { color: #365b12; text-underline-offset: 3px; }
+.information-page .information-nav { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 8px; }
+.information-page .information-nav a { display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: white; color: var(--ink); text-decoration: none; font-size: 12px; font-weight: 600; }
+.information-page .information-nav a:hover { border-color: #8eae32; background: #f5f8ee; }
+@media (max-width: 760px) {
+  .information-page { padding-bottom: 48px; }
+  .information-page .dash-top { padding-top: 32px; padding-bottom: 18px; }
+  .information-page .dash-top h1 { font-size: 29px; line-height: 1.2; letter-spacing: -1px; }
+  .information-page .dash-top p { font-size: 13px; }
+  .information-page .information-section { padding: 18px; margin-bottom: 10px; }
+  .information-page .information-section h2 { font-size: 16px; }
+  .information-page .information-section p { font-size: 14px; line-height: 1.65; }
+}
+
+/* Small-screen usability safeguards; desktop layout rules remain untouched. */
+@media (max-width: 640px) {
+  /* Do not mask overflow at the page root; fix or contain it at the component. */
+  html, body, #app { max-width: 100%; }
+  button, [role="button"], .btn, input, select { touch-action: manipulation; }
+  .header .nav-actions { gap: 10px; }
+  .nav-links > button, .nav-links > a { min-height: 44px; }
+  .search-bar { min-width: 0; }
+  .search-bar .date-shortcuts button, .mobile-filter { min-height: 44px; }
+  .keeper-grid, .browse-layout, .profile-hero, .profile-lower, .dashboard-overview, .availability-workspace { min-width: 0; }
+  .keeper-card, .profile-copy, .booking-card, .panel, .admin-panel { min-width: 0; }
+  .profile-image { height: min(112vw, 430px); }
+  .contact-actions a { min-height: 48px; }
+  .week { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; overflow: visible; }
+  .week button { min-width: 0; min-height: 72px; padding: 8px 1px; }
+  .week span, .week small { font-size: 9px; text-align: center; }
+  .week strong { font-size: 13px; }
+  .admin-table-wrap { max-width: 100%; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+  .admin-table-wrap table { min-width: 640px; }
+}
+@media (max-width: 360px) {
+  .section { padding-left: 14px; padding-right: 14px; }
+  .nav-wrap { padding: 0 12px; }
+  .brand-lockup { width: 142px; }
+  .hero h1 { font-size: 39px; }
+  .hero-content { padding-left: 14px; padding-right: 14px; }
+  .week { grid-template-columns: repeat(7, 48px); }
+  .profile-image { height: 350px; }
+  .form-grid input, .form-grid select, .register-form input, .register-form select, .register-form textarea { min-height: 46px; }
+}

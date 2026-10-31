@@ -3,8 +3,10 @@
   <rect x="2" y="2" width="52" height="52" rx="15" fill="#0a2421"/>
   <circle cx="24" cy="23" r="15" fill="none" stroke="#baff29" stroke-width="3.5"/>
   <path d="m35 34 11 11" fill="none" stroke="#baff29" stroke-width="4.5" stroke-linecap="round"/>
-  <path d="M17 31V18h14v13M17 21h14M21.5 21v10M26 21v10" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="28.8" cy="27.4" r="2.5" fill="#baff29"/>
-  <path d="m28 25.1.8 1 .9-.2.6.8-.4.9.6.8m-3.2-.9.8.2.5.8-.5.8" fill="none" stroke="#0a2421" stroke-width=".65" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="24" cy="23" r="6.4" fill="#fff"/>
+  <g fill="#0a2421">
+    <path d="m24 18.7 1.45 2.05 2.42-.78-1.46 2.17 1.56 1.73-2.49-.35L24 25.55l-1.48-2.03-2.48.39 1.55-1.78-1.45-2.13 2.38.74z"/>
+    <path d="m18.9 26.2 1.48.34.63 1.35-1.42.84-.98-1.15zM29.1 26.2l.29 1.38-.98 1.15-1.42-.84.63-1.35z"/>
+  </g>
   <text x="68" y="36.5" fill="#0a2421" font-family="Manrope, Arial, sans-serif" font-size="23" font-weight="800" letter-spacing="-.45">Gjej portier</text>
 </svg>

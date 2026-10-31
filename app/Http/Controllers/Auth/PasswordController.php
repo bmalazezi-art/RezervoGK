@@ -55,7 +55,7 @@ class PasswordController extends Controller
         $data = $request->validate([
             'token' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:254'],
-            'password' => ['bail', 'required', 'string', 'confirmed', PasswordRule::min(12)->mixedCase()->numbers(),
+            'password' => ['bail', 'required', 'string', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers(),
                 function ($attribute, $value, $fail) {
                     if (strlen($value) > 72) {
                         $fail(__('Fjalëkalimi duhet të ketë deri në 72 bajte.'));

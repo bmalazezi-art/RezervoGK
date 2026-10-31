@@ -10,6 +10,7 @@ import { weekdayShort, displayDate } from "../lib/dates";
 import type { PublicKeeper, CalendarDay } from "../types/goalkeeper";
 import { navigate as setPage } from "../navigation";
 import { copyTextToClipboard, profileShareTargets } from "../lib/profileSharing";
+import "../../css/profile-improvements.css";
 
 const supportsNativeShare = () => typeof Reflect.get(navigator, "share") === "function";
 
@@ -108,7 +109,11 @@ export default function Profile({ keeper, calendar, selectedDate, today, maxDate
         {keeper.availabilityDates.length === 0 && <p>{t("Portieri nuk ka publikuar ende data të lira.")}</p>}
       </div>
       <div className="min-w-0"><WeeklySchedule hours={keeper.weeklyHours} /><div className="reviews"><div className="reviews-title"><h2>{t("Para se të kontaktoni")}</h2></div><p>{t("Të dhënat plotësohen nga portieri. Platforma nuk verifikon identitetin ose përvojën e tij.")}</p><p>{t("Konfirmoni drejtpërdrejt datën, orën, vendin dhe çmimin. Pagesa e ndeshjes bëhet në dorë mes jush.")}</p></div>
-        <details className="reviews"><summary>{t("Raporto profilin")}</summary><form onSubmit={submitReport}><label>{t("Arsyeja")}<select value={reportForm.data.reason} onChange={e => reportForm.setData("reason", e.target.value)}><option value="inaccurate">{t("Informacion i pasaktë")}</option><option value="inappropriate">{t("Përmbajtje e papërshtatshme")}</option><option value="spam">{t("Spam ose mashtrim")}</option><option value="other">{t("Tjetër")}</option></select></label><label>{t("Detaje (opsionale)")}<textarea maxLength={1000} value={reportForm.data.details} onChange={e => reportForm.setData("details", e.target.value)} /></label>{reportForm.errors.reason && <p role="alert">{reportForm.errors.reason}</p>}{reportForm.errors.details && <p role="alert">{reportForm.errors.details}</p>}<Button type="submit" variant="outline" disabled={reportForm.processing}>{t("Dërgo raportin")}</Button>{reportForm.wasSuccessful && <p role="status">{t("Raporti u dërgua. Faleminderit.")}</p>}</form></details>
+        <details className="reviews profile-report-card"><summary><span>{t("Raporto profilin")}</span><small>{t("Ke vërejtur problem? Na ndihmo duke e raportuar.")}</small></summary><div className="profile-report-body"><p>{t("Raportet shqyrtohen nga ekipi i Gjej portier. Zgjidh arsyen që përshkruan më mirë problemin.")}</p><form className="profile-report-form" onSubmit={submitReport}>
+          <label htmlFor="profile-report-reason">{t("Arsyeja")}</label><select id="profile-report-reason" value={reportForm.data.reason} onChange={e => reportForm.setData("reason", e.target.value)}><option value="inaccurate">{t("Informacion i pasaktë")}</option><option value="inappropriate">{t("Përmbajtje e papërshtatshme")}</option><option value="spam">{t("Spam ose mashtrim")}</option><option value="other">{t("Tjetër")}</option></select>{reportForm.errors.reason && <p className="profile-report-error" role="alert">{reportForm.errors.reason}</p>}
+          <label htmlFor="profile-report-details">{t("Çfarë duhet të dimë? (opsionale)")}</label><textarea id="profile-report-details" maxLength={1000} rows={4} value={reportForm.data.details} onChange={e => reportForm.setData("details", e.target.value)} aria-describedby="profile-report-help profile-report-count" /><div className="profile-report-meta"><small id="profile-report-help">{t("Përshkruaj problemin shkurt. Mos përfshi numër telefoni ose të dhëna private.")}</small><small id="profile-report-count">{reportForm.data.details.length}/1000</small></div>{reportForm.errors.details && <p className="profile-report-error" role="alert">{reportForm.errors.details}</p>}
+          <Button type="submit" variant="outline" disabled={reportForm.processing}>{reportForm.processing ? t("Duke dërguar...") : t("Dërgo raportin")}</Button>{reportForm.wasSuccessful && <p className="profile-report-success" role="status">{t("Raporti u dërgua. Faleminderit.")}</p>}
+        </form></div></details>
       </div>
     </section>
   </main>;

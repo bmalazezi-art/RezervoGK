@@ -24,7 +24,7 @@ class RegisterGoalkeeperRequest extends FormRequest
             'country_id' => ['required', 'integer', Rule::exists('countries', 'id')],
             'email' => ['required', 'string', 'email', 'max:254', Rule::unique('users', 'email')],
             'accept_terms' => ['accepted'],
-            'password' => ['bail', 'required', 'string', 'confirmed', Password::min(12)->mixedCase()->numbers(),
+            'password' => ['bail', 'required', 'string', 'confirmed', Password::min(8)->mixedCase()->numbers(),
                 function ($attribute, $value, $fail) {
                     if (strlen($value) > 72) {
                         $fail(__('Fjalëkalimi duhet të ketë deri në 72 bajte.'));

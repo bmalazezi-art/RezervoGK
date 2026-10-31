@@ -6,16 +6,15 @@ import { Button, Icon } from "./marketplace";
 
 export type WeeklyHour = { weekday: number; start: string; end: string; endsNextDay: boolean };
 const weekdays = ["E hënë", "E martë", "E mërkurë", "E enjte", "E premte", "E shtunë", "E diel"];
-const guidance = "Ky orar përsërit disponueshmërinë për 30 ditët e ardhshme. Konfirmoni orën e ndeshjes direkt me portierin.";
-
 export function WeeklySchedule({ hours }: { hours: WeeklyHour[] }) {
   useLocale();
-  return <section className="panel" aria-label={t("Disponueshmëria javore")}><div className="panel-head"><div><Icon name="clock" /><h2>{t("Disponueshmëria javore")}</h2><span>{t("Përsëritet")}</span></div></div>
-    <p>{t(guidance)}</p>
-    {hours.length === 0 ? <p>{t("Portieri nuk ka publikuar ende orar javor.")}</p> : <dl>{weekdays.map((label, index) => {
+  return <section className="panel weekly-public-schedule" aria-label={t("Disponueshmëria javore")}><div className="panel-head"><div><Icon name="clock" /><h2>{t("Disponueshmëria javore")}</h2><span>{t("Çdo javë")}</span></div></div>
+    <aside className="weekly-schedule-explainer"><strong>{t("Si funksionon orari")}</strong><p>{t("Ky orar përsëritet në të njëjtën ditë çdo javë, për 30 ditët e ardhshme.")}</p><p>{t("Një datë e shënuar si e zënë e përjashton orarin për atë ditë. Datat shtesë shfaqen veçmas në kalendar.")}</p></aside>
+    {hours.length === 0 ? <p className="weekly-schedule-empty">{t("Nuk ka orar javor të publikuar. Kontrollo kalendarin për data të lira të shënuara veçmas.")}</p> : <dl className="weekly-schedule-list">{weekdays.map((label, index) => {
       const day = hours.find(hour => hour.weekday === index + 1);
-      return <div className="flex justify-between items-start gap-3 py-3 border-b border-[var(--line)] text-sm" key={label}><dt className="font-semibold">{t(label)}</dt><dd className="m-0 text-right">{day ? <><span className="whitespace-nowrap tabular-nums">{day.start} – {day.end}</span>{day.endsNextDay && <small className="block">{t("Përfundon ditën tjetër")}</small>}</> : t("Pa orar të publikuar")}</dd></div>;
+      return <div className={`weekly-schedule-day ${day ? "is-available" : "is-unset"}`} key={label}><dt><span className="weekly-schedule-dot" aria-hidden="true" />{t(label)}</dt><dd>{day ? <><span className="weekly-schedule-hours">{day.start} – {day.end}</span>{day.endsNextDay && <small>{t("Përfundon ditën tjetër")}</small>}</> : <span className="weekly-schedule-none">{t("Pa orar javor")}</span>}</dd></div>;
     })}</dl>}
+    <p className="weekly-schedule-confirmation">{t("Kjo është disponueshmëri e përafërt, jo rezervim. Konfirmo datën dhe orën drejtpërdrejt me portierin.")}</p>
   </section>;
 }
 

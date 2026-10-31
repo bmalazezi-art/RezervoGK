@@ -7,6 +7,8 @@ use App\Support\LaunchModel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -33,9 +35,14 @@ class SessionController extends Controller
                 }],
             'remember' => ['sometimes', 'boolean'],
         ]);
-        if (! Auth::attempt(['email' => $data['email'], 'password' => $data['password'], 'is_suspended' => false], $request->boolean('remember'))) {
+        $user = User::where('email', $data['email'])->first();
+        if (! $user || ! Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages(['email' => __('Email-i ose fjalëkalimi nuk është i saktë.')]);
         }
+        if ($user->is_suspended) {
+            throw ValidationException::withMessages(['email' => __('Llogaria juaj është pezulluar. Ju lutemi kontaktoni mbështetjen nëse mendoni se ky është një gabim.')]);
+        }
+        Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
         if (LaunchModel::isFree()) {

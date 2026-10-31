@@ -13,7 +13,7 @@ class AccountSettingsController extends Controller
     {
         $data = $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password' => ['bail', 'required', 'string', 'confirmed', 'different:current_password', PasswordRule::min(12)->mixedCase()->numbers(),
+            'password' => ['bail', 'required', 'string', 'confirmed', 'different:current_password', PasswordRule::min(8)->mixedCase()->numbers(),
                 function ($attribute, $value, $fail) {
                     if (strlen($value) > 72) {
                         $fail(__('Fjalëkalimi duhet të ketë deri në 72 bajte.'));

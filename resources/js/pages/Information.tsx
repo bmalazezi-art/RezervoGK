@@ -86,13 +86,12 @@ const documents: Record<PageKey, Document> = {
 export default function Information({ pageKey }: { pageKey: PageKey }) {
   useLocale();
   const document = documents[pageKey];
-  const isPolicyPage = pageKey === "privacy" || pageKey === "terms";
-  return <main className={`page-main dashboard-page information-page${isPolicyPage ? " policy-page" : ""}`}><Head title={t(document.title)} />
+  return <main className="page-main dashboard-page information-page policy-page"><Head title={t(document.title)} />
     <div className="section dash-top"><div><span>{document.draft ? t("PROJEKT PËR RISHIKIM") : (pageKey === "privacy" || pageKey === "terms" ? t("POLITIKAT") : t("NDIHMË PËR PËRDORUESIT"))}</span><h1>{t(document.title)}</h1><p>{t(document.intro)}</p></div></div>
-    <section className={`section information-content${isPolicyPage ? " policy-content" : ""}`}>
+    <section className="section information-content policy-content">
       {document.review && <aside className="panel" aria-label={t("Detaje për rishikim nga pronari")}><h2>{t("Detaje për rishikim nga pronari")}</h2><ul>{document.review.map(item => <li key={item}>{t(item)}</li>)}</ul></aside>}
-      {document.sections.map(section => <article className={`panel information-section${isPolicyPage ? " policy-section" : ""}`} key={t(section.title)}><h2>{t(section.title)}</h2>{section.paragraphs.map(paragraph => <p key={t(paragraph)}>{t(paragraph)}</p>)}{section.email && <p><a href={`mailto:${section.email}`}>{section.email}</a></p>}</article>)}
-      {!isPolicyPage && <nav className="chips" aria-label={t("Faqet e ndihmës dhe politikat")}><Link href="/how-it-works">{t("Si funksionon")}</Link><Link href="/faq">{t("Pyetje të shpeshta")}</Link><Link href="/contact">{t("Kontakti")}</Link><Link href="/privacy">{t("Politika e privatësisë")}</Link><Link href="/terms">{t("Kushtet e përdorimit")}</Link></nav>}
+      {document.sections.map(section => <article className="panel information-section policy-section" key={t(section.title)}><h2>{t(section.title)}</h2>{section.paragraphs.map(paragraph => <p key={t(paragraph)}>{t(paragraph)}</p>)}{section.email && <p><a href={`mailto:${section.email}`}>{section.email}</a></p>}</article>)}
+      <nav className="chips information-nav" aria-label={t("Faqet e ndihmës dhe politikat")}><Link href="/how-it-works">{t("Si funksionon")}</Link><Link href="/faq">{t("Pyetje të shpeshta")}</Link><Link href="/contact">{t("Kontakti")}</Link><Link href="/privacy">{t("Politika e privatësisë")}</Link><Link href="/terms">{t("Kushtet e përdorimit")}</Link></nav>
     </section>
   </main>;
 }

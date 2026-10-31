@@ -1,0 +1,114 @@
+.profile-report-card { border: 1px solid var(--line); }
+.profile-report-card > summary { display: grid; gap: 5px; cursor: pointer; list-style: none; }
+.profile-report-card > summary::-webkit-details-marker { display: none; }
+.profile-report-card > summary::after { content: "+"; grid-column: 2; grid-row: 1; align-self: center; color: #607f08; font-size: 22px; font-weight: 700; }
+.profile-report-card[open] > summary::after { content: "−"; }
+.profile-report-card > summary > span { grid-column: 1; font-size: 15px; font-weight: 700; }
+.profile-report-card > summary > small { grid-column: 1; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.profile-report-body { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.profile-report-body > p { margin: 0 0 16px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.profile-report-form { display: grid; gap: 8px; }
+.profile-report-form > label { margin-top: 4px; color: var(--ink); font-size: 12px; font-weight: 700; }
+.profile-report-form > select, .profile-report-form > textarea { width: 100%; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--ink); font: inherit; font-size: 13px; }
+.profile-report-form > select { min-height: 44px; }
+.profile-report-form > textarea { min-height: 104px; resize: vertical; line-height: 1.5; }
+.profile-report-form > select:focus-visible, .profile-report-form > textarea:focus-visible { outline: 2px solid #607f08; outline-offset: 2px; }
+.profile-report-meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.profile-report-meta small:first-child { max-width: 78%; }
+.profile-report-meta small:last-child { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.profile-report-form > .btn { justify-self: start; margin-top: 8px; }
+.profile-report-error { margin: 0; color: #9b3029; font-size: 11px; }
+.profile-report-success { margin: 4px 0 0; padding: 11px 12px; border-radius: 8px; background: #eef6df; color: #365b12; font-size: 12px; line-height: 1.5; }
+.weekly-public-schedule .panel-head > div { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+.weekly-public-schedule .panel-head h2 { margin: 0; }
+.weekly-public-schedule .panel-head > div > span { padding: 4px 8px; border-radius: 12px; background: #edf4dc; color: #4d690d; font-size: 9px; font-weight: 700; }
+.weekly-schedule-explainer { margin: 12px 0 14px; padding: 13px 14px; border-left: 3px solid #8eae32; border-radius: 7px; background: #f5f8ee; }
+.weekly-schedule-explainer strong { color: var(--ink); font-size: 11px; }
+.weekly-schedule-explainer p { margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.weekly-schedule-list { margin: 0; }
+.weekly-schedule-day { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 48px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.weekly-schedule-day:last-child { border-bottom: 0; }
+.weekly-schedule-day dt { display: flex; align-items: center; gap: 9px; color: var(--ink); font-size: 12px; font-weight: 700; }
+.weekly-schedule-dot { width: 9px; height: 9px; flex: 0 0 9px; border-radius: 50%; background: #a8b1ab; }
+.weekly-schedule-day.is-available .weekly-schedule-dot { background: #8eae32; box-shadow: 0 0 0 3px #edf4dc; }
+.weekly-schedule-day dd { display: grid; justify-items: end; gap: 3px; margin: 0; text-align: right; }
+.weekly-schedule-hours { color: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.weekly-schedule-day dd small, .weekly-schedule-none { color: var(--muted); font-size: 10px; }
+.weekly-schedule-confirmation, .weekly-schedule-empty { margin: 13px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+@media (max-width: 460px) {
+  .profile-report-card { padding: 18px; }
+  .profile-report-form > .btn { width: 100%; justify-content: center; }
+  .weekly-public-schedule .panel-head > div { gap: 7px; }
+  .weekly-schedule-day { min-height: 45px; }
+}
+
+.profile-report-card,
+.profile-report-card button,
+.profile-report-card input,
+.profile-report-card select,
+.profile-report-card textarea {
+  font-family: "DM Sans", sans-serif;
+}
+.profile-report-card > summary > span { font-family: "DM Sans", sans-serif; }
+
+/* Keep the report form typography aligned with the profile content around it. */
+.profile-report-card,
+.profile-report-card button,
+.profile-report-card input,
+.profile-report-card select,
+.profile-report-card textarea {
+  font-family: "DM Sans", sans-serif;
+}
+.profile-report-card > summary > span { font-size: 16px; font-weight: 700; }
+.profile-report-card > summary > small,
+.profile-report-body > p,
+.profile-report-form > label,
+.profile-report-form > select,
+.profile-report-form > textarea,
+.profile-report-meta,
+.profile-report-error,
+.profile-report-success {
+  font-size: 14px;
+}
+.profile-report-card > summary > small,
+.profile-report-body > p,
+.profile-report-meta,
+.profile-report-error,
+.profile-report-success {
+  line-height: 1.6;
+}
+.profile-report-form > label { font-weight: 600; }
+.profile-report-form > .btn { font-family: "DM Sans", sans-serif; font-size: 14px; }
+
+/* Keep the contact guidance compact and the date lookup action intentional. */
+.profile-lower .reviews:not(.profile-report-card) {
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+}
+.profile-lower .reviews:not(.profile-report-card) .reviews-title h2 {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+.profile-lower .reviews:not(.profile-report-card) > p {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.profile-lower .reviews:not(.profile-report-card) > p:last-child { margin-bottom: 0; }
+.profile-lower .form-grid {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+.profile-lower .form-grid > .btn {
+  min-height: 48px;
+  width: auto;
+  min-width: 150px;
+  padding-inline: 18px;
+  white-space: nowrap;
+}
+@media (max-width: 560px) {
+  .profile-lower .form-grid { grid-template-columns: 1fr; }
+  .profile-lower .form-grid > .btn { width: 100%; }
+}
