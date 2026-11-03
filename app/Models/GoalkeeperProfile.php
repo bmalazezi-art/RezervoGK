@@ -87,6 +87,6 @@ class GoalkeeperProfile extends Model
 
     public function matchFormats(): BelongsToMany
     {
-        return $this->belongsToMany(MatchFormat::class)->orderBy('code');
+        return $this->belongsToMany(MatchFormat::class)->inPreferredOrder();
     }
 }

@@ -27,7 +27,7 @@ class RegistrationController extends Controller
         return Inertia::render('Register', [
             'countries' => GoalkeeperPricing::countries(),
             'cities' => GoalkeeperPricing::cities(),
-            'formats' => MatchFormat::orderBy('code')->pluck('code'),
+            'formats' => MatchFormat::inPreferredOrder()->pluck('code'),
         ]);
     }
 

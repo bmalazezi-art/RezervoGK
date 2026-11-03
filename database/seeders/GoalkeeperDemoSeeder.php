@@ -17,7 +17,7 @@ class GoalkeeperDemoSeeder extends Seeder
             foreach (['XK' => 'Kosovë', 'AL' => 'Shqipëri', 'MK' => 'Maqedoni e Veriut'] as $code => $name) {
                 Country::updateOrCreate(['code' => $code], ['name' => $name]);
             }
-            $formats = collect(['5v5', '6v6', '7v7'])->mapWithKeys(
+            $formats = collect(['5v5', '6v6', '7v7', '11v11'])->mapWithKeys(
                 fn ($code) => [$code => MatchFormat::firstOrCreate(['code' => $code])->id]
             );
             $rows = [

@@ -83,3 +83,14 @@ test('Messenger and Instagram open the native share sheet where supported and ke
   assert.match(page, /href=\{shareTargets\.viber\}/);
   assert.match(page, /href=\{shareTargets\.whatsapp\}/);
 });
+
+test('share disclosure is keyboard-accessible and announces copy and share results', () => {
+  const page = readFileSync(resolve(root, 'resources/js/pages/Profile.tsx'), 'utf8');
+
+  assert.match(page, /aria-expanded=\{shareMenuOpen\} aria-controls="profile-share-options"/);
+  assert.match(page, /role="group" aria-label=\{t\("Mundësitë e shpërndarjes së profilit"\)\}/);
+  assert.match(page, /onKeyDown=\{closeShareMenu\}/);
+  assert.match(page, /if \(event\.key === "Escape"\)[\s\S]*shareButton\.current\?\.focus\(\)/);
+  assert.match(page, /role="status" aria-live="polite"/);
+  assert.match(page, /href=\{shareTargets\.viber\}[\s\S]*void copyLink\(t\("Linku u kopjua\./);
+});
