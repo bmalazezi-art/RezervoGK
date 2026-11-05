@@ -462,7 +462,10 @@ if timeout 5 ssh -vv "${SSH_COMMON[@]}" "${DEPLOY_SSH[@]}" -N -R "127.0.0.1:$REM
     -o ExitOnForwardFailure=yes "$DEPLOY_USER@127.0.0.1" > "$STATE/remote-forward.log" 2>&1; then
     fail 'Remote TCP forwarding unexpectedly succeeded'
 fi
-grep -Fqi 'refused remote port forward' "$LOG" || fail 'sshd did not log policy refusal of remote TCP forwarding'
+if ! grep -Fqi 'refused remote port forward' "$LOG"; then
+    cat "$STATE/remote-forward.log" "$LOG" >&2
+    fail 'sshd did not log policy refusal of remote TCP forwarding'
+fi
 pass 'Remote TCP forwarding request is denied'
 
 SSH_AUTH_SOCK="$STATE/agent.sock" ssh-agent -D -a "$STATE/agent.sock" > "$STATE/agent.log" 2>&1 &
