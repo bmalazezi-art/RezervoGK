@@ -63,7 +63,7 @@ cleanup() {
     port_closed=0
     if (( SSHD_READY )) && [[ -n "${PORT:-}" ]]; then
         for _ in $(seq 1 30); do
-            if ! python3 - "$PORT" <<'PY' >/dev/null 2>&1
+            if python3 - "$PORT" <<'PY' >/dev/null 2>&1
 import socket, sys
 try:
     s = socket.create_connection(("127.0.0.1", int(sys.argv[1])), timeout=.2)
@@ -453,6 +453,7 @@ if ! grep -Fqi 'refused streamlocal port forward' "$LOG"; then
     cat "$STATE/stream-local-forward.log" "$LOG" >&2
     fail 'Stream-local forwarding denial was not observed'
 fi
+rm -f -- "$LOCAL_SOCKET"
 [[ ! -S "$LOCAL_SOCKET" ]] || fail 'SSH client left its temporary stream-local socket behind'
 pass 'Stream-local forwarding request is denied'
 
