@@ -8,6 +8,7 @@ DEPLOY_USER=gjej-deploy
 ADMIN_USER=gjej-sftp-admin
 STATE=""
 SSHD_PID=""
+SSHD_PGID=""
 SSHD_READY=0
 SSHD_RUNTIME_DIR_CREATED=0
 AGENT_PID=""
@@ -25,10 +26,11 @@ cleanup() {
         pkill -TERM -P "$FORWARD_PID" 2>/dev/null || true
     fi
     if [[ -n "$SSHD_PID" ]]; then
-        pkill -TERM -P "$SSHD_PID" 2>/dev/null || true
-    fi
-    if [[ -n "$SSHD_PID" ]]; then
-        kill -TERM "$SSHD_PID" 2>/dev/null || true
+        if [[ -n "$SSHD_PGID" ]]; then
+            kill -TERM -- "-$SSHD_PGID" 2>/dev/null || true
+        else
+            kill -TERM "$SSHD_PID" 2>/dev/null || true
+        fi
         wait "$SSHD_PID" 2>/dev/null || true
     fi
     if [[ -n "$AGENT_PID" ]]; then
@@ -78,7 +80,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 [[ "$(id -u)" == 0 ]] || fail 'Run this integration test as root inside its disposable Ubuntu runner.'
-for executable in /usr/sbin/sshd ssh sftp ssh-keygen openssl timeout seq stat install chmod chown mktemp \
+for executable in /usr/sbin/sshd ssh sftp ssh-keygen openssl timeout seq stat install chmod chown mktemp setsid \
     useradd usermod userdel groupdel getent pkill python3; do
     command -v "$executable" >/dev/null 2>&1 || [[ -x "$executable" ]] || fail "Required executable is missing: $executable"
 done
@@ -117,7 +119,7 @@ cat > "$JAIL/.ssh/rc" <<'EOF'
 EOF
 chown "$DEPLOY_USER:$DEPLOY_USER" "$JAIL/.ssh/rc"
 chmod 0600 "$JAIL/.ssh/rc"
-install -d -o root -g root -m 0700 "$AUTH_DIR"
+install -d -o root -g root -m 0711 "$AUTH_DIR"
 # These synthetic fixtures are deliberately accessible to the deploy user on
 # the host. Escape tests must fail because of the jail, not host permissions.
 install -d -o "$DEPLOY_USER" -g "$DEPLOY_USER" -m 0700 "$OUTSIDE"
@@ -251,8 +253,9 @@ PORT_OWNER="$(stat -c '%U:%G:%a' "$JAIL")"
 [[ "$(stat -c '%U:%G:%a' "$JAIL/incoming")" == "$DEPLOY_USER:$DEPLOY_USER:700" ]] || fail 'Incoming directory ownership/mode is incorrect'
 pass 'chroot is root-owned 0711 and only /incoming is writable by gjej-deploy'
 
-/usr/sbin/sshd -D -f "$CONFIG" -E "$LOG" &
+setsid /usr/sbin/sshd -D -f "$CONFIG" -E "$LOG" &
 SSHD_PID=$!
+SSHD_PGID="$SSHD_PID"
 ready=0
 for _ in $(seq 1 50); do
     if python3 - "$PORT" <<'PY' >/dev/null 2>&1
