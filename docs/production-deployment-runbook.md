@@ -38,6 +38,74 @@ Checklist:
 - [ ] SMTP configuration/inbox verification, named-admin authorization, secure administrative access and policy/support approval handled separately before public launch.
 - [ ] Bank submissions remain disabled until their separate explicit activation approval. A successful deployment must never toggle this flag automatically.
 
+### Restricted SFTP transfer preparation — not enabled
+
+This is the proposed design only. No production SSH configuration, account, key, directory permission, daemon or service was inspected or changed during this local milestone. The production account home, current contents/ownership of `/var/lib/gjej-deploy`, OpenSSH version/config includes and account key sources remain to be verified on an approved maintenance window. Do not assume the existing incoming directory is empty or safe as a chroot.
+
+The preferred jail root is `/var/lib/gjej-deploy`, with only a dedicated `/incoming` subdirectory accessible inside it:
+
+| Host path | Intended owner/mode | Purpose |
+| --- | --- | --- |
+| `/var`, `/var/lib` and `/var/lib/gjej-deploy` | `root:root`, directories not writable by group/others; `/var/lib/gjej-deploy` mode `0711` | Chroot path. Every path component must be root-owned and not writable by group/others. The jail root itself must not be writable or listable by `gjej-deploy`; execute/search is required to reach `/incoming`. |
+| `/var/lib/gjej-deploy/incoming` | `gjej-deploy:gjej-deploy`, mode `0700` | Only upload destination. The client sees it as `/incoming`; root can read submissions for quarantine. The SFTP umask is `0077`. |
+| `/etc/ssh/authorized_keys/gjej-deploy` | `root:root`, mode `0644` (parent directory root-owned, not writable by others) | The approved upload public key. Keep it outside the jail and user-writable paths. |
+
+Keep the jail dedicated and nearly empty: no bind mounts or symlinks to releases, `.env`, Laravel source, receipts, Lidhje paths, host files or sockets. `ChrootDirectory` contains the root-owned jail, while the user-writable `incoming` child is the only writable path. The account's passwd home must resolve inside the jail (proposed `/incoming`); retain its existing non-login shell and no-sudo status. `internal-sftp` is in-process, so the jail does not need shell binaries. If any chroot component is not root-owned/non-writable, if the account home cannot be safely mapped, if the parent has unrelated content, or if incoming contains unreviewed files, **stop** and obtain an owner-approved relocation/cleanup plan. Do not recursively chown or chmod files to force the design.
+
+Append a user-scoped block at the very end of `/etc/ssh/sshd_config` after inspecting the entire active configuration and includes. Preserve the existing global `Subsystem sftp` line and every Lidhje/admin setting; do not add a duplicate subsystem declaration. Validate that the production OpenSSH release supports every directive before use:
+
+```sshconfig
+Match User gjej-deploy
+    AuthenticationMethods publickey
+    PubkeyAuthentication yes
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+    AuthorizedKeysFile /etc/ssh/authorized_keys/%u
+    AuthorizedKeysCommand none
+    TrustedUserCAKeys none
+    ChrootDirectory /var/lib/gjej-deploy
+    ForceCommand internal-sftp -d /incoming -u 0077 -P symlink,hardlink
+    PermitTTY no
+    PermitUserRC no
+    DisableForwarding yes
+    AllowTcpForwarding no
+    AllowAgentForwarding no
+    AllowStreamLocalForwarding no
+    X11Forwarding no
+    PermitTunnel no
+```
+
+`ForceCommand internal-sftp` prevents client-requested shells and commands; `DisableForwarding` blocks forwarding classes, with the individual directives retained for clarity and defense in depth. The jail prevents path traversal into host paths; `-P symlink,hardlink` rejects link creation inside the incoming area. `-u 0077` removes group/other access from newly created files/directories. The key line should use the OpenSSH `restrict` authorized-key option as another guard, for example `restrict ssh-ed25519 <approved-public-key> gjej artifact upload`. Add a `from="<approved-static-runner-CIDR>"` restriction only if the runner's stable egress range is confirmed. Do not put a private key on the server. OpenSSH documents root-owned chroot path requirements, in-process SFTP, forced-command behavior and the forwarding implications in its [sshd_config manual](https://man.openbsd.org/sshd_config); SFTP denied requests and umask options are in the [sftp-server manual](https://man.openbsd.org/sftp-server).
+
+#### Future production change sequence — requires separate approval
+
+1. **Preflight and preserve rollback state.** Keep the current admin SSH session open. Record the server OpenSSH version, active config and include files, effective settings for `gjej-deploy` and an admin user, account UID/GID/home/shell/groups/sudo status, and metadata for `/var/lib/gjej-deploy` and `incoming`. Use metadata-only inspection (`namei -l`, `stat`, and a shallow filename/type listing); do not read artifact contents. Check for symlinks, mounts and other service dependencies. Require owner confirmation if the existing path has unexpected contents. Save a root-only snapshot of `/etc/ssh/sshd_config` and every include that will be changed, preserving owner/mode, in a new `/root/ssh-gjej-prechange-<UTC timestamp>/` directory mode `0700`. Record prior account home and directory metadata separately. If the chroot ownership/path assumptions fail, stop before edits.
+2. **Prepare only reviewed paths.** After confirming no conflicting use and an empty or separately handled incoming directory, the approved operator can apply these narrowly scoped changes; do not recurse and do not run them before the metadata/path preflight:
+
+   ```sh
+   chown root:root /var/lib/gjej-deploy
+   chmod 0711 /var/lib/gjej-deploy
+   install -d -o gjej-deploy -g gjej-deploy -m 0700 /var/lib/gjej-deploy/incoming
+   usermod --home /incoming gjej-deploy
+   install -d -o root -g root -m 0755 /etc/ssh/authorized_keys
+   install -o root -g root -m 0644 /root/approved-key-staging/gjej-deploy.pub /etc/ssh/authorized_keys/gjej-deploy
+   ```
+
+   If any target is a symlink, a mount point, contains unreviewed files, or is used by another service, stop; these commands are not a substitute for investigating that condition. Keep the existing non-login shell, UID, groups and sudo state unchanged. Record the account's old home for rollback. Verify the installed public key fingerprint with its owner through a separate channel. Do not generate or expose a private key on the server.
+3. **Apply the Match block and validate before any reload.** Make only the user-scoped SSH config addition. Run `sshd -t` (using the target daemon binary and active config) and stop without reload on any error. Run `sshd -T -C user=gjej-deploy,host=<server-host>,addr=<approved-client-address>` and verify the effective chroot, forced SFTP command, key-only authentication, no TTY, no forwarding, no CA/authorized-keys-command bypass and correct key file. Also compare `sshd -T -C` for existing admin and other SSH users against the saved baseline. Check chroot ownership and mode on every path component; `sshd -t` alone does not prove that runtime chroot access will pass.
+4. **Controlled reload and acceptance.** Keep the original session open and first establish a second independent admin SSH session. Only after all pre-reload checks pass, reload the SSH service using the confirmed service unit (for example `systemctl reload ssh` or `sshd`; do not guess). From a controlled client, verify SFTP public-key login and upload a synthetic file to `/incoming`; verify checksum and restrictive mode as root, then remove only that synthetic file. Verify `cd ..` and host paths such as `/etc`, `/var/www`, and `/var/lib` cannot expose host content; SFTP has no view outside the jail. Verify shell/exec requests are not run, PTY is unavailable, and local/remote TCP, agent, X11, stream-local forwarding and tunnel requests fail. Confirm unrelated admin SSH access still works. Any failure triggers rollback; do not declare completion with CLI config checks alone.
+5. **Rollback if needed.** Keep the admin session open. Restore the saved SSH config/include files byte-for-byte with their prior owner/mode; remove only the newly installed Gjej public-key file; restore the recorded passwd home and the exact prior directory owner/modes (never delete incoming contents). Run `sshd -t` against the restored active config; reload only if it passes. Recheck admin SSH from a second session. If restored config does not validate, do not reload; use the still-open administrative session and out-of-band console to repair. Preserve uploads for root review; never recursively delete or move user submissions as rollback.
+
+The local macOS rehearsal validated a synthetic configuration using the host OpenSSH 9.0 `sshd -t` and `sshd -T -C`, and tested restoring a synthetic config snapshot byte-for-byte followed by `sshd -t`; it did not start a daemon or create a login. The repository now contains a real integration harness at `scripts/release/test_restricted_sftp.sh` and a manually triggered, secret-free Ubuntu 24.04 workflow at `.github/workflows/restricted-sftp-integration.yml`. The harness creates only synthetic accounts/passwords/keys/files, uses its own temporary `sshd_config`, verifies the effective policy and kernel listener are loopback-only, and removes the daemon, accounts, groups and temporary tree on exit. Its deploy key has no `authorized_keys` restrictions, and synthetic host fixtures are accessible to that account if the chroot is removed, so operation-level denials exercise the server policy. Run it only as root inside a disposable Ubuntu VM/runner:
+
+```sh
+sudo bash scripts/release/test_restricted_sftp.sh
+```
+
+The `workflow_dispatch` workflow installs OpenSSH server without allowing package hooks to start a system SSH service, then runs that same harness. The harness has received static checks only; actual SFTP upload, chroot traversal, command denial, forwarding denial and file isolation remain **NOT VERIFIED** until the hosted workflow succeeds. No production key/configuration is involved or created. Production implementation and reload still require separate approval.
+
+Incoming files are writable by the submitter and are not trusted. Before promotion, root must copy the artifact, manifest and `.minisig` file into a root-owned, non-writable quarantine area and prevent replacement between verification and extraction. The future verifier must use only root-configured Minisign public key(s), validate the exact expected signer identity from the signed trusted comment **before trusting any manifest metadata**, then verify the signed manifest digest, exact artifact filename/commit/release binding, artifact SHA-256 and archive structure. Missing, malformed, invalid, revoked-key or mismatched signatures fail closed; there is no custom-format or unsigned fallback. A checksum and manifest transferred together do not authenticate their origin. Promotion must also verify release ID/name consistency, expected files, owner/group/modes, environment and shared-storage links, platform requirements, absence of forbidden content, and no path/symlink escape. The existing promotion helper is **not approved as production-ready**: it has not been shown to enforce this signature contract or the full validation gate and pre-switch candidate smoke workflow described here. Do not use it to promote until a hardened version has passed review and tests.
+
 ## 2. Hosting, HTTPS and environment contract
 
 Use the existing PHP/React/Inertia build. There is no configured Inertia SSR server, so Node is a build dependency rather than an application daemon. Installed Vite/plugin packages require Node `^20.19.0 || >=22.12.0`; use a patched supported LTS branch and pin the build version. The locally tested Node is 22.23.2. Do not choose an EOL branch merely because it satisfies that range. [Node release status](https://nodejs.org/en/about/previous-releases).
