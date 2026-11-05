@@ -314,7 +314,10 @@ put $UPLOAD /incoming/release.bin
 ls /incoming
 get /incoming/release.bin $LOCAL_COPY
 EOF
-sftp_batch "$DEPLOY_KEY" "$STATE/upload.batch" > "$STATE/sftp-upload.log" 2>&1 || fail 'SFTP upload/list/download inside /incoming failed'
+if ! sftp_batch "$DEPLOY_KEY" "$STATE/upload.batch" > "$STATE/sftp-upload.log" 2>&1; then
+    cat "$STATE/sftp-upload.log" "$LOG" >&2
+    fail 'SFTP upload/list/download inside /incoming failed'
+fi
 cmp -s "$UPLOAD" "$JAIL/incoming/release.bin" || fail 'Uploaded file bytes differ from synthetic source'
 cmp -s "$UPLOAD" "$LOCAL_COPY" || fail 'Downloaded file bytes differ from synthetic upload'
 [[ "$(stat -c '%a' "$JAIL/incoming/release.bin")" == 600 ]] || fail 'SFTP umask did not keep uploaded file private'
