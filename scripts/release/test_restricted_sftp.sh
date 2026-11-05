@@ -108,7 +108,7 @@ install -d -o "$DEPLOY_USER" -g "$DEPLOY_USER" -m 0700 "$JAIL/incoming"
 install -d -o "$DEPLOY_USER" -g "$DEPLOY_USER" -m 0700 "$JAIL/.ssh"
 cat > "$JAIL/.ssh/rc" <<'EOF'
 #!/bin/sh
-: > /.ssh-rc-executed
+: > /incoming/ssh-user-rc-executed
 EOF
 chown "$DEPLOY_USER:$DEPLOY_USER" "$JAIL/.ssh/rc"
 chmod 0600 "$JAIL/.ssh/rc"
@@ -355,9 +355,10 @@ fi
 pass 'Incorrect-key SFTP access is denied'
 
 COMMAND_MARKER="$JAIL/incoming/ssh-command-executed"
+USER_RC_MARKER="$JAIL/incoming/ssh-user-rc-executed"
 timeout 5 ssh "${SSH_COMMON[@]}" "${DEPLOY_SSH[@]}" "$DEPLOY_USER@127.0.0.1" "touch /incoming/ssh-command-executed" > "$STATE/ssh-command.log" 2>&1 || true
 [[ ! -e "$COMMAND_MARKER" ]] || fail 'SSH command executed inside the upload jail'
-[[ ! -e "$JAIL/.ssh-rc-executed" ]] || fail 'Per-user SSH rc ran despite PermitUserRC no'
+[[ ! -e "$USER_RC_MARKER" ]] || fail 'Per-user SSH rc ran despite PermitUserRC no'
 grep -F 'forced-command (config)' "$LOG" | grep -F 'internal-sftp' >/dev/null || fail 'sshd log did not confirm forced internal-sftp command'
 pass 'Shell/SSH command is forced to internal-sftp and per-user rc does not run'
 
