@@ -1,0 +1,47 @@
+name: Restricted SFTP integration test
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  restricted-sftp:
+    name: Disposable Ubuntu SFTP jail test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the test source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install OpenSSH server in the ephemeral runner
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          packages=()
+          [[ -x /usr/sbin/sshd ]] || packages+=(openssh-server)
+          command -v sftp >/dev/null 2>&1 || packages+=(openssh-client)
+          command -v xauth >/dev/null 2>&1 || packages+=(xauth)
+          if (( ${#packages[@]} > 0 )); then
+            policy=/usr/sbin/policy-rc.d
+            if [[ -e "$policy" ]]; then
+              echo "Unexpected existing policy-rc.d; refusing to overwrite it" >&2
+              exit 1
+            fi
+            trap 'sudo rm -f "$policy"' EXIT
+            printf '#!/bin/sh\nexit 101\n' | sudo tee "$policy" >/dev/null
+            sudo chmod 0755 "$policy"
+            sudo apt-get update
+            sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y "${packages[@]}"
+            sudo rm -f "$policy"
+            trap - EXIT
+          fi
+      - name: Run loopback-only restricted SFTP integration test
+        shell: bash
+        run: sudo bash scripts/release/test_restricted_sftp.sh
