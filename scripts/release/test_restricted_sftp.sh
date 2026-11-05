@@ -71,6 +71,8 @@ raise SystemExit(1)
 PY
     then
         printf 'FAIL: temporary SSH port remains open after cleanup\n' >&2
+        if command -v ss >/dev/null 2>&1; then ss -ltnp "sport = :$PORT" >&2 || true; fi
+        ps -eo pid,ppid,pgid,args | grep -E '[s]shd|[s]etsid' >&2 || true
         status=1
     fi
     exit "$status"
@@ -438,7 +440,10 @@ PY
 fi
 wait "$FORWARD_PID" 2>/dev/null || true
 FORWARD_PID=""
-grep -Eiq 'administratively prohibited' "$STATE/stream-local-forward.log" || fail 'Stream-local forwarding denial was not observed'
+if ! grep -Eiq 'administratively prohibited' "$STATE/stream-local-forward.log"; then
+    cat "$STATE/stream-local-forward.log" "$LOG" >&2
+    fail 'Stream-local forwarding denial was not observed'
+fi
 [[ ! -S "$LOCAL_SOCKET" ]] || fail 'SSH client left its temporary stream-local socket behind'
 pass 'Stream-local forwarding request is denied'
 
