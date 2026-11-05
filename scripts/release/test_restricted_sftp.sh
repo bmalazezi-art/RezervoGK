@@ -60,7 +60,10 @@ cleanup() {
         rm -rf -- "$STATE" || { printf 'FAIL: temporary state cleanup failed\n' >&2; status=1; }
         if [[ -e "$STATE" ]]; then printf 'FAIL: temporary state remains after cleanup\n' >&2; status=1; fi
     fi
-    if (( SSHD_READY )) && [[ -n "${PORT:-}" ]] && python3 - "$PORT" <<'PY' >/dev/null 2>&1
+    port_closed=0
+    if (( SSHD_READY )) && [[ -n "${PORT:-}" ]]; then
+        for _ in $(seq 1 30); do
+            if ! python3 - "$PORT" <<'PY' >/dev/null 2>&1
 import socket, sys
 try:
     s = socket.create_connection(("127.0.0.1", int(sys.argv[1])), timeout=.2)
@@ -69,7 +72,13 @@ except OSError:
 s.close()
 raise SystemExit(1)
 PY
-    then
+            then port_closed=1; break; fi
+            sleep 0.1
+        done
+    else
+        port_closed=1
+    fi
+    if (( ! port_closed )); then
         printf 'FAIL: temporary SSH port remains open after cleanup\n' >&2
         if command -v ss >/dev/null 2>&1; then ss -ltnp "sport = :$PORT" >&2 || true; fi
         ps -eo pid,ppid,pgid,args | grep -E '[s]shd|[s]etsid' >&2 || true
@@ -440,7 +449,7 @@ PY
 fi
 wait "$FORWARD_PID" 2>/dev/null || true
 FORWARD_PID=""
-if ! grep -Eiq 'administratively prohibited' "$STATE/stream-local-forward.log"; then
+if ! grep -Fqi 'refused streamlocal port forward' "$LOG"; then
     cat "$STATE/stream-local-forward.log" "$LOG" >&2
     fail 'Stream-local forwarding denial was not observed'
 fi
