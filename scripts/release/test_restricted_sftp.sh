@@ -8,6 +8,8 @@ DEPLOY_USER=gjej-deploy
 ADMIN_USER=gjej-sftp-admin
 STATE=""
 SSHD_PID=""
+SSHD_READY=0
+SSHD_RUNTIME_DIR_CREATED=0
 AGENT_PID=""
 FORWARD_PID=""
 DEPLOY_CREATED=0
@@ -49,11 +51,14 @@ cleanup() {
         if getent group "$DEPLOY_USER" >/dev/null; then groupdel "$DEPLOY_USER" 2>/dev/null || true; fi
         if getent group "$DEPLOY_USER" >/dev/null; then printf 'FAIL: synthetic deploy group cleanup failed\n' >&2; status=1; fi
     fi
+    if (( SSHD_RUNTIME_DIR_CREATED )); then
+        rmdir /run/sshd 2>/dev/null || { printf 'FAIL: temporary sshd runtime directory cleanup failed\n' >&2; status=1; }
+    fi
     if [[ -n "$STATE" && "$STATE" == /var/lib/gjej-sftp-it.* ]]; then
         rm -rf -- "$STATE" || { printf 'FAIL: temporary state cleanup failed\n' >&2; status=1; }
         if [[ -e "$STATE" ]]; then printf 'FAIL: temporary state remains after cleanup\n' >&2; status=1; fi
     fi
-    if [[ -n "${PORT:-}" ]] && python3 - "$PORT" <<'PY' >/dev/null 2>&1
+    if (( SSHD_READY )) && [[ -n "${PORT:-}" ]] && python3 - "$PORT" <<'PY' >/dev/null 2>&1
 import socket, sys
 try:
     s = socket.create_connection(("127.0.0.1", int(sys.argv[1])), timeout=.2)
@@ -203,6 +208,15 @@ touch "$LOG"
 chown root:root "$CONFIG" "$LOG"
 chmod 0600 "$CONFIG" "$LOG" "$STATE/host_ed25519"
 
+# On runners where the package service was never started, sshd's runtime
+# privilege-separation directory may not exist. Create only this empty runtime
+# directory and remove it during cleanup if this harness created it.
+if [[ ! -d /run/sshd ]]; then
+    [[ ! -e /run/sshd ]] || fail '/run/sshd exists but is not a directory'
+    SSHD_RUNTIME_DIR_CREATED=1
+    install -d -o root -g root -m 0755 /run/sshd
+fi
+
 /usr/sbin/sshd -t -f "$CONFIG"
 pass 'sshd configuration syntax validates'
 
@@ -244,7 +258,10 @@ for _ in $(seq 1 50); do
     if python3 - "$PORT" <<'PY' >/dev/null 2>&1
 import socket, sys
 s = socket.create_connection(("127.0.0.1", int(sys.argv[1])), timeout=0.2)
+banner = s.makefile('rb').readline(255)
 s.close()
+if not banner.startswith(b'SSH-2.0-'):
+    raise SystemExit(1)
 PY
     then ready=1; break; fi
     sleep 0.1
@@ -275,6 +292,7 @@ if not found:
     raise SystemExit(1)
 PY
 pass 'runtime sshd listener is exclusively IPv4 loopback'
+SSHD_READY=1
 host_key_line="$(cat "$STATE/host_ed25519.pub")"
 printf '[127.0.0.1]:%s %s\n' "$PORT" "$host_key_line" > "$KNOWN_HOSTS"
 chmod 0600 "$KNOWN_HOSTS"
@@ -444,6 +462,7 @@ grep -Eiq 'X11 forwarding request failed|X11 forwarding disabled|administrativel
 pass 'X11 forwarding request is denied'
 
 if [[ ! -c /dev/net/tun ]]; then fail 'Runner has no /dev/net/tun; cannot exercise the SSH tunnel request'; fi
+pass 'runner provides /dev/net/tun for the SSH tunnel test'
 if timeout 5 ssh -vv "${SSH_COMMON[@]}" "${DEPLOY_SSH[@]}" -w any:any -N "$DEPLOY_USER@127.0.0.1" > "$STATE/tunnel.log" 2>&1; then
     fail 'SSH tunnel request unexpectedly succeeded'
 fi
