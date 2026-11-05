@@ -478,7 +478,10 @@ done
 export SSH_AUTH_SOCK="$STATE/agent.sock"
 ssh-add "$ADMIN_KEY" >/dev/null 2>&1
 timeout 5 ssh -vv -A "${SSH_COMMON[@]}" -i "$DEPLOY_KEY" "$DEPLOY_USER@127.0.0.1" true > "$STATE/agent-forward.log" 2>&1 || true
-grep -Eiq 'agent forwarding disabled|administratively prohibited|agent forwarding request failed' "$STATE/agent-forward.log" "$LOG" || fail 'Agent forwarding denial was not observed'
+if ! grep -Eiq 'agent forwarding disabled|administratively prohibited|agent forwarding request failed' "$STATE/agent-forward.log" "$LOG"; then
+    cat "$STATE/agent-forward.log" "$LOG" >&2
+    fail 'Agent forwarding denial was not observed'
+fi
 pass 'Agent forwarding request is denied'
 
 DISPLAY=localhost:10.0 timeout 5 ssh -vv -X "${SSH_COMMON[@]}" "${DEPLOY_SSH[@]}" "$DEPLOY_USER@127.0.0.1" true > "$STATE/x11-forward.log" 2>&1 || true
