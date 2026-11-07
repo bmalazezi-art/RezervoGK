@@ -63,11 +63,18 @@ class GoalkeeperAuthenticationTest extends TestCase
     {
         $this->get('/register');
         $oldSession = session()->getId();
-        $this->post('/register', $this->registration(['email' => '  KEEPER@EXAMPLE.TEST  ']))->assertRedirect('/dashboard');
+        $this->post('/register', $this->registration([
+            'email' => '  KEEPER@EXAMPLE.TEST  ',
+            'accepted_terms_version' => 'attacker-selected-version',
+            'accepted_terms_at' => '2000-01-01T00:00:00Z',
+        ]))->assertRedirect('/dashboard');
         $user = User::sole();
         $this->assertAuthenticatedAs($user);
         $this->assertNotSame($oldSession, session()->getId());
         $this->assertSame('keeper@example.test', $user->email);
+        $this->assertSame(User::CURRENT_POLICY_VERSION, $user->accepted_terms_version);
+        $this->assertNotNull($user->accepted_terms_at);
+        $this->assertTrue($user->accepted_terms_at->between(now()->subMinute(), now()));
         $this->assertNotSame('Keeper-Test-12345', $user->getAuthPassword());
         $this->assertTrue(Hash::check('Keeper-Test-12345', $user->getAuthPassword()));
         $this->assertArrayNotHasKey('password', $user->toArray());
@@ -85,6 +92,13 @@ class GoalkeeperAuthenticationTest extends TestCase
             ->missing('auth.user.password')->missing('auth.user.remember_token')->missing('keeper.user_id'));
     }
 
+    public function test_registration_accepts_nine_a_side_format(): void
+    {
+        $this->post('/register', $this->registration(['formats' => ['9v9']]))->assertRedirect('/dashboard');
+
+        $this->assertSame(['9v9'], User::sole()->goalkeeperProfile->matchFormats->pluck('code')->all());
+    }
+
     public static function invalidRegistrations(): array
     {
         return [
@@ -96,7 +110,8 @@ class GoalkeeperAuthenticationTest extends TestCase
             [['phone' => '123'], 'phone'], [['city_id' => 999], 'city_id'],
             [['country_id' => 999], 'country_id'], [['country_id' => [1]], 'country_id'],
             [['price' => '-1'], 'price'], [['price' => '7.255'], 'price'],
-            [['formats' => []], 'formats'], [['formats' => ['11v11']], 'formats.0'], [['accept_terms' => false], 'accept_terms'],
+            [['formats' => []], 'formats'], [['formats' => ['10v10']], 'formats.0'],
+            [['accept_terms' => false], 'accept_terms'], [['accept_terms' => null], 'accept_terms'],
             [['user_id' => 10], 'user_id'], [['is_verified' => true], 'is_verified'],
         ];
     }
@@ -154,6 +169,8 @@ class GoalkeeperAuthenticationTest extends TestCase
     public function test_valid_login_rotates_session_and_logout_invalidates_it(): void
     {
         $user = User::factory()->create(['password' => 'Keeper-Test-12345']);
+        $this->assertNull($user->accepted_terms_version);
+        $this->assertNull($user->accepted_terms_at);
         $this->ownedProfile($user);
         $this->get('/login');
         $oldSession = session()->getId();

@@ -1,4 +1,4 @@
-# RezervoGk — Production deployment checklist and runbook
+# Gjej portier — Production deployment checklist and runbook
 
 **Free-launch update — 25 October 2026:** use [the current free-launch report](free-launch.md) before this historical runbook. Platform access is free, payment/receipt/admin endpoints are disabled and transfer email delivery is unscheduled. Bank details, payment-admin provisioning and the transfer outbox migration are not free-launch requirements. Do not follow the historical billing activation steps or apply that unrelated migration merely to launch free access. Infrastructure, HTTPS, password-reset SMTP, persistent storage and backup/restore requirements still apply. The latest free-launch backup has not passed a full restore drill; older M7 restores do not establish that evidence.
 
@@ -16,8 +16,8 @@ Complete before scheduling a release:
 | Hosting account, region, production hostname and TLS termination | Pending |
 | Exact PHP web/CLI package and security patch evidence | Pending; local 8.4.12 must not be the public production baseline |
 | Exact MySQL target/version, schema and restricted grants | Pending; Oracle MySQL 8.4 not yet tested |
-| Persistent storage locations / application Unix identity | Pending |
-| Current and previous release identifiers / artifact checksums | Pending; this workspace has no Git repository or deployment pipeline |
+| Persistent storage locations / application Unix identity | Gjej isolation layout is established as recorded below; reverify the live server before a release |
+| Current and previous release identifiers / artifact checksums | Record the selected clean Git commit and validated artifact manifest for each approved release; transfer/promotion is not yet production-ready |
 | Backup destination, encryption keys, recovery access and retention | Pending |
 | Approved recovery point objective (RPO), recovery time objective (RTO), restore-drill schedule | Pending |
 | Scheduler host, monitoring destination, log retention and alerts | Pending |
@@ -37,6 +37,150 @@ Checklist:
 - [ ] Outbox migration applied only after target/backup approval; scheduler monitoring distinguishes boot, data/schema and delivery readiness.
 - [ ] SMTP configuration/inbox verification, named-admin authorization, secure administrative access and policy/support approval handled separately before public launch.
 - [ ] Bank submissions remain disabled until their separate explicit activation approval. A successful deployment must never toggle this flag automatically.
+
+### Local release packaging and artifact validation
+
+The local repository contains release packaging and validation tools under `scripts/release/`. They do not connect to a server. Packaging requires the checkout root to have no tracked or untracked Git changes and an explicit existing commit SHA or tag; `HEAD`, branch names and uncommitted content are refused. The selected commit and caller-supplied ref are recorded in a JSON manifest. Git system/global configuration and environment overrides are disabled for the source clone; submodules and Git LFS pointer files are refused. The builder checks out that committed tree in a temporary clone, installs from `composer.lock` with `--no-dev`, `--no-scripts` and `--no-plugins`, checks PHP platform requirements, runs `npm ci`, and builds Vite assets. It never packages the current worktree.
+
+After these tools are reviewed and committed, run them from a clean checkout:
+
+```sh
+python3 -m scripts.release.package_release --ref <tag-or-commit-sha> --output-dir <empty-local-output-directory>
+python3 -m scripts.release.validate_artifact <artifact.tar.gz> --manifest <artifact.tar.gz.manifest.json>
+```
+
+The output directory must be outside the repository and empty. The archive includes production `vendor/`, Laravel application files, lockfiles, and the Vite manifest plus exactly its referenced build assets. The USTAR archive and metadata are staged in the output directory, validated, then published without overwriting existing names. The manifest records the SHA-256 of both lockfiles and the archive, release ID, commit, selected ref and UTC build time; the validator checks their internal consistency. Digest verification alone proves only that bytes match the supplied manifest; it does **not** prove trusted origin or authenticate the selected ref.
+
+Signing support uses the official Minisign detached signature format (`.minisig`) through the Minisign CLI, not the retired project-specific OpenSSL JSON envelope. The wrapper requires Minisign **0.12 or newer** and uses `-V -Q` to authenticate the Minisign signature and its signed trusted comment. Install Minisign from an approved package source and pin the version in CI; on macOS the upstream project documents `brew install minisign`. Linux builds from source require the upstream documented build toolchain/dependencies. No Minisign binary was installed on the production server as part of this work.
+
+The tool signs the exact manifest bytes with Minisign. Its Minisign trusted comment carries a compact versioned metadata payload binding signer identity, manifest SHA-256, exact artifact filename and SHA-256, commit SHA and release ID. The identity is a signed claim checked against an operator-configured expected identity; Minisign itself does not attest to a CI repository/workflow identity. Verification first runs Minisign against locally configured public trust roots and only parses the trusted comment after `minisign -V -Q` succeeds. It then checks the identity and metadata against the signed manifest, and runs archive SHA-256/structure validation. The signature and manifest delivered with an artifact do not supply their own trusted public key. The wrapper has no fallback for the retired custom JSON format or unsigned artifacts.
+
+Example local commands (replace paths and identity with reviewed values; no real keys are included here):
+
+```sh
+python3 -m scripts.release.sign_artifact sign \
+  --archive <artifact.tar.gz> \
+  --manifest <artifact.tar.gz.manifest.json> \
+  --private-key <protected-minisign.key> \
+  --signer-identity <approved-build-identity> \
+  --signature <artifact.tar.gz.manifest.minisig>
+
+python3 -m scripts.release.sign_artifact verify \
+  --archive <artifact.tar.gz> \
+  --manifest <artifact.tar.gz.manifest.json> \
+  --signature <artifact.tar.gz.manifest.minisig> \
+  --trusted-public-key <root-owned-minisign.pub> \
+  --expected-identity <approved-build-identity>
+```
+
+For key rotation, specify each currently trusted key explicitly by repeating `--trusted-public-key`. During an approved short overlap, provide both old and new locally pinned keys; after the cutover remove the old key from the trust configuration. A public key supplied alongside an artifact is never accepted automatically. Revocation removes the compromised key from the trust set immediately; artifacts that cannot verify against a remaining key fail. Production trust roots and allowed signer identity must be root-owned, reviewed configuration, unavailable for modification by `gjej`, `gjej-deploy`, the artifact submitter, or Lidhje. A local verifier/installer now exists, but its production trust configuration and full candidate gate are not approved or implemented end to end.
+
+Keep the Minisign secret key in a protected signing service or narrowly scoped CI secret; never store it in Git, an artifact, the Droplet, or the general deployment account. For unattended CI, arrange a protected signer that can read the key without putting its contents or passphrase in command-line arguments or logs. Minisign's normal generated key is password protected; the test suite uses only synthetic `-W` keys in temporary directories. Production key format, custody, recovery access and named approvers remain owner decisions. Prefer a separately protected signing job after build/test approval, and record the selected commit and artifact digest. The server needs only pinned public key(s), the expected identity policy and a compatible Minisign verifier; private signing material must never reach it.
+
+Minisign is an established offline signature format, but the signed identity payload remains a claim under a key and provides no independent CI OIDC attestation or transparency log. If repository/workflow provenance is required, evaluate Sigstore separately; do not allow an unreviewed alternate format or unsigned fallback.
+
+This tooling does not create keys, install verification software, establish a CI trust boundary, sign a real release or make promotion ready. It does not authorize creating a real production release.
+
+Artifacts must never contain `.env` or `.env.*`, `.git`, `node_modules`, `public/hot`, `storage`, `public/storage`, user uploads, private receipts, logs, sessions, caches, compiled runtime state, SQLite databases, nested archives, dumps, backups, test output, temporary files, dependency credentials or other secrets. Only the public server configuration files `public/.htaccess` and `public/.user.ini` are permitted dotfiles. The validator checks normalized paths, traversal, duplicates, links/special files, PAX/GNU tar metadata, hidden files, forbidden paths and file extensions, bounded compressed/decompressed sizes and member count, required Laravel/Vite files, lock digests and exact Vite asset references. It performs a bounded raw tar preflight before the standard parser and does not extract the archive. Do not use a generic `tar -x` on an unvalidated artifact.
+
+The local build runs Composer/npm commands as the invoking OS user and does not provide an OS-level filesystem/network sandbox. Composer plugins and scripts are disabled, but npm lifecycle/build code can still access files and network resources available to that user. Its subprocess environment and temporary home are isolated; they do not restrict filesystem access. Package only a reviewed, trusted commit in an appropriately isolated account or CI runner; do not use this tool to inspect untrusted repositories or refs.
+
+### Current Gjej isolation and transfer boundary
+
+The approved same-Droplet layout is:
+
+```text
+/var/www/rezervogk/releases/<release-id>/   release code, production vendor and built assets
+/var/www/rezervogk/current                  atomic pointer to the selected release
+/var/www/rezervogk/shared/storage/           persistent application storage
+/etc/gjej/rezervogk.env                      root-managed environment file
+/run/php/php8.4-gjej.sock                    dedicated Gjej PHP-FPM socket
+```
+
+The intended identities are `gjej` for PHP-FPM/runtime, `gjej-nginx` for Nginx workers, and `gjej-deploy` for artifact submission. The root-owned `/usr/local/sbin/gjej-promote` is the promotion boundary. This architecture was established in prior infrastructure work; this local packaging task did not connect to or re-inspect the server. Reconfirm actual paths, ownership and service state during any separately approved deployment window. Lidhje Social remains on its existing `www-data` pool and configuration.
+
+No transfer key or secure transfer mechanism is configured. No public Gjej virtual host or DNS was enabled by this milestone. Do not use interactive shell access, general-purpose SSH/SCP access, or CI credentials that can execute arbitrary commands. The preferred future path is a restricted SFTP-only/chroot or forced-command receiver that can submit an artifact and manifest into a non-active incoming directory, with no PTY, forwarding, shell or sudo. A manual operator transfer to a controlled incoming directory is an interim alternative only if the same root-side sealing and validation steps are followed. A CI key should be transfer-only and held behind protected-environment review; it must never have root credentials.
+
+### Restricted SFTP transfer preparation — not enabled
+
+This is the proposed design only. No production SSH configuration, account, key, directory permission, daemon or service was inspected or changed during this local milestone. The production account home, current contents/ownership of `/var/lib/gjej-deploy`, OpenSSH version/config includes and account key sources remain to be verified on an approved maintenance window. Do not assume the existing incoming directory is empty or safe as a chroot.
+
+The preferred jail root is `/var/lib/gjej-deploy`, with only a dedicated `/incoming` subdirectory accessible inside it:
+
+| Host path | Intended owner/mode | Purpose |
+| --- | --- | --- |
+| `/var`, `/var/lib` and `/var/lib/gjej-deploy` | `root:root`, directories not writable by group/others; `/var/lib/gjej-deploy` mode `0711` | Chroot path. Every path component must be root-owned and not writable by group/others. The jail root itself must not be writable or listable by `gjej-deploy`; execute/search is required to reach `/incoming`. |
+| `/var/lib/gjej-deploy/incoming` | `gjej-deploy:gjej-deploy`, mode `0700` | Only upload destination. The client sees it as `/incoming`; root can read submissions for quarantine. The SFTP umask is `0077`. |
+| `/etc/ssh/authorized_keys/gjej-deploy` | `root:root`, mode `0644` (parent directory root-owned, not writable by others) | The approved upload public key. Keep it outside the jail and user-writable paths. |
+
+Keep the jail dedicated and nearly empty: no bind mounts or symlinks to releases, `.env`, Laravel source, receipts, Lidhje paths, host files or sockets. `ChrootDirectory` contains the root-owned jail, while the user-writable `incoming` child is the only writable path. The account's passwd home must resolve inside the jail (proposed `/incoming`); retain its existing non-login shell and no-sudo status. `internal-sftp` is in-process, so the jail does not need shell binaries. If any chroot component is not root-owned/non-writable, if the account home cannot be safely mapped, if the parent has unrelated content, or if incoming contains unreviewed files, **stop** and obtain an owner-approved relocation/cleanup plan. Do not recursively chown or chmod files to force the design.
+
+Append a user-scoped block at the very end of `/etc/ssh/sshd_config` after inspecting the entire active configuration and includes. Preserve the existing global `Subsystem sftp` line and every Lidhje/admin setting; do not add a duplicate subsystem declaration. Validate that the production OpenSSH release supports every directive before use:
+
+```sshconfig
+Match User gjej-deploy
+    AuthenticationMethods publickey
+    PubkeyAuthentication yes
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+    AuthorizedKeysFile /etc/ssh/authorized_keys/%u
+    AuthorizedKeysCommand none
+    TrustedUserCAKeys none
+    ChrootDirectory /var/lib/gjej-deploy
+    ForceCommand internal-sftp -d /incoming -u 0077 -P symlink,hardlink
+    PermitTTY no
+    PermitUserRC no
+    DisableForwarding yes
+    AllowTcpForwarding no
+    AllowAgentForwarding no
+    AllowStreamLocalForwarding no
+    X11Forwarding no
+    PermitTunnel no
+```
+
+`ForceCommand internal-sftp` prevents client-requested shells and commands; `DisableForwarding` blocks forwarding classes, with the individual directives retained for clarity and defense in depth. The jail prevents path traversal into host paths; `-P symlink,hardlink` rejects link creation inside the incoming area. `-u 0077` removes group/other access from newly created files/directories. The key line should use the OpenSSH `restrict` authorized-key option as another guard, for example `restrict ssh-ed25519 <approved-public-key> gjej artifact upload`. Add a `from="<approved-static-runner-CIDR>"` restriction only if the runner's stable egress range is confirmed. Do not put a private key on the server. OpenSSH documents root-owned chroot path requirements, in-process SFTP, forced-command behavior and the forwarding implications in its [sshd_config manual](https://man.openbsd.org/sshd_config); SFTP denied requests and umask options are in the [sftp-server manual](https://man.openbsd.org/sftp-server).
+
+#### Future production change sequence — requires separate approval
+
+1. **Preflight and preserve rollback state.** Keep the current admin SSH session open. Record the server OpenSSH version, active config and include files, effective settings for `gjej-deploy` and an admin user, account UID/GID/home/shell/groups/sudo status, and metadata for `/var/lib/gjej-deploy` and `incoming`. Use metadata-only inspection (`namei -l`, `stat`, and a shallow filename/type listing); do not read artifact contents. Check for symlinks, mounts and other service dependencies. Require owner confirmation if the existing path has unexpected contents. Save a root-only snapshot of `/etc/ssh/sshd_config` and every include that will be changed, preserving owner/mode, in a new `/root/ssh-gjej-prechange-<UTC timestamp>/` directory mode `0700`. Record prior account home and directory metadata separately. If the chroot ownership/path assumptions fail, stop before edits.
+2. **Prepare only reviewed paths.** After confirming no conflicting use and an empty or separately handled incoming directory, the approved operator can apply these narrowly scoped changes; do not recurse and do not run them before the metadata/path preflight:
+
+   ```sh
+   chown root:root /var/lib/gjej-deploy
+   chmod 0711 /var/lib/gjej-deploy
+   install -d -o gjej-deploy -g gjej-deploy -m 0700 /var/lib/gjej-deploy/incoming
+   usermod --home /incoming gjej-deploy
+   install -d -o root -g root -m 0755 /etc/ssh/authorized_keys
+   install -o root -g root -m 0644 /root/approved-key-staging/gjej-deploy.pub /etc/ssh/authorized_keys/gjej-deploy
+   ```
+
+   If any target is a symlink, a mount point, contains unreviewed files, or is used by another service, stop; these commands are not a substitute for investigating that condition. Keep the existing non-login shell, UID, groups and sudo state unchanged. Record the account's old home for rollback. Verify the installed public key fingerprint with its owner through a separate channel. Do not generate or expose a private key on the server.
+3. **Apply the Match block and validate before any reload.** Make only the user-scoped SSH config addition. Run `sshd -t` (using the target daemon binary and active config) and stop without reload on any error. Run `sshd -T -C user=gjej-deploy,host=<server-host>,addr=<approved-client-address>` and verify the effective chroot, forced SFTP command, key-only authentication, no TTY, no forwarding, no CA/authorized-keys-command bypass and correct key file. Also compare `sshd -T -C` for existing admin and other SSH users against the saved baseline. Check chroot ownership and mode on every path component; `sshd -t` alone does not prove that runtime chroot access will pass.
+4. **Controlled reload and acceptance.** Keep the original session open and first establish a second independent admin SSH session. Only after all pre-reload checks pass, reload the SSH service using the confirmed service unit (for example `systemctl reload ssh` or `sshd`; do not guess). From a controlled client, verify SFTP public-key login and upload a synthetic file to `/incoming`; verify checksum and restrictive mode as root, then remove only that synthetic file. Verify `cd ..` and host paths such as `/etc`, `/var/www`, and `/var/lib` cannot expose host content; SFTP has no view outside the jail. Verify shell/exec requests are not run, PTY is unavailable, and local/remote TCP, agent, X11, stream-local forwarding and tunnel requests fail. Confirm unrelated admin SSH access still works. Any failure triggers rollback; do not declare completion with CLI config checks alone.
+5. **Rollback if needed.** Keep the admin session open. Restore the saved SSH config/include files byte-for-byte with their prior owner/mode; remove only the newly installed Gjej public-key file; restore the recorded passwd home and the exact prior directory owner/modes (never delete incoming contents). Run `sshd -t` against the restored active config; reload only if it passes. Recheck admin SSH from a second session. If restored config does not validate, do not reload; use the still-open administrative session and out-of-band console to repair. Preserve uploads for root review; never recursively delete or move user submissions as rollback.
+
+The local macOS rehearsal validated a synthetic configuration using the host OpenSSH 9.0 `sshd -t` and `sshd -T -C`, and tested restoring a synthetic config snapshot byte-for-byte followed by `sshd -t`; it did not start a daemon or create a login. The repository now contains a real integration harness at `scripts/release/test_restricted_sftp.sh` and a manually triggered, secret-free Ubuntu 24.04 workflow at `.github/workflows/restricted-sftp-integration.yml`. The harness creates only synthetic accounts/passwords/keys/files, uses its own temporary `sshd_config`, verifies the effective policy and kernel listener are loopback-only, and removes the daemon, accounts, groups and temporary tree on exit. Its deploy key has no `authorized_keys` restrictions, and synthetic host fixtures are accessible to that account if the chroot is removed, so operation-level denials exercise the server policy. Run it only as root inside a disposable Ubuntu VM/runner:
+
+```sh
+sudo bash scripts/release/test_restricted_sftp.sh
+```
+
+The `workflow_dispatch` workflow installs OpenSSH server without allowing package hooks to start a system SSH service, then runs that same harness. This checkout has no Docker/Podman/VM runtime and no `gh` CLI. The workflow and script are local uncommitted changes, so the hosted run has **not** been dispatched; actual SFTP upload, chroot traversal, command denial, forwarding denial, file isolation and live rollback remain **NOT VERIFIED** until that manual hosted run succeeds. No production key/configuration is involved or created. Production implementation and reload still require explicit approval.
+
+Incoming files are writable by the submitter and are not trusted. Before promotion, root must copy the artifact, manifest and `.minisig` file into a root-owned, non-writable quarantine area and prevent replacement between verification and extraction. The signed verification step must use only root-configured Minisign public key(s), validate the exact expected signer identity from the signed trusted comment **before trusting any manifest metadata**, then verify the signed manifest digest, exact artifact filename/commit/release binding, artifact SHA-256 and archive structure. Missing, malformed, invalid, revoked-key or mismatched signatures fail closed; there is no custom-format or unsigned fallback. A checksum and manifest transferred together do not authenticate their origin. Promotion must also verify release ID/name consistency, expected files, owner/group/modes, environment and shared-storage links, platform requirements, absence of forbidden content, and no path/symlink escape. The existing promotion helper is **not approved as production-ready**: it has not been shown to enforce this signature contract or the full validation gate and pre-switch candidate smoke workflow described here. Do not use it to promote until a hardened version has passed review and tests.
+
+The local repository now contains `scripts/release/install_release.py`. It snapshots bounded regular inputs into a private directory, verifies the Minisign signature against explicitly supplied trust roots and expected identity, extracts files through directory file descriptors without following archive links, refuses an existing release ID, and publishes only a new inactive release directory. Its CLI requires root and explicit target owner/group IDs; it does not change `current`, attach production environment/storage, run Laravel commands, apply migrations or perform candidate smoke checks. Synthetic tests cover successful extraction, existing-release refusal, untrusted-key refusal and symlink-input refusal. This local implementation has not been reviewed or exercised on the production host and does **not** authorize deployment or replace the existing promotion helper.
+
+### Future candidate promotion gate
+
+1. Build only from a clean, reviewed tag/commit with the local tool; retain its archive and manifest unchanged. Review the commit and lockfile diffs. Run isolated application tests, dependency audits, TypeScript checks, frontend build and `composer check-platform-reqs` before transfer.
+2. Transfer only through the future restricted receiver. On the server, root seals a copy in quarantine, verifies the Minisign `.minisig` using only pinned trust policy before trusting the manifest, then verifies SHA-256 and archive structure without extraction. The local `scripts/release/install_release.py` is a candidate for this stage after independent code review and target-specific rehearsal; until then, use no production extractor. The reviewed installation flow must extract into a fresh staging directory, reject links/special files, prevent traversal, and never overwrite an existing release.
+3. Install/verify production dependencies from the exact lock file if they were not built into the artifact. Create a protected release-local `bootstrap/cache`; link `/etc/gjej/rezervogk.env` and `/var/www/rezervogk/shared/storage` with reviewed ownership/modes. Keep private receipts outside the public root. Build Laravel caches as `gjej` only after environment and shared storage are attached; never package runtime caches or replace APP_KEY.
+4. Run candidate checks against the candidate path before switching `current`: Laravel boots as `gjej`; expected routes and configuration load; PHP-FPM socket and permissions are correct; read-only DB/schema checks succeed; the Vite manifest references available assets; public assets load; private receipts remain denied to Nginx and `www-data`; safe application smoke tests pass. Any write test must use approved synthetic data. Do not call CLI-only checks a browser/user-flow test.
+5. After separate release approval, and separate migration approval if a migration is needed, create a temporary `current.new` symlink and atomically rename it over `current`. Reload only the required service after config validation, run post-switch smoke checks, and record release ID, digest, operator, checks and time. Keep the prior release and shared storage intact. Exposing the service publicly still requires a separate launch approval.
+6. If a candidate fails before switching, leave `current` untouched. If post-switch checks fail, atomically point `current` to the previous schema-compatible release, reload as approved and repeat checks. Never roll back shared storage, APP_KEY or database state as part of a code rollback.
+
+Database migrations require separate explicit approval, target-specific backup/restore evidence, a reviewed migration list and an execution window; packaging and promotion must never run migrations automatically. Public launch, DNS/TLS changes, mail enablement, admin access, payments and data activation also require separate approvals. The local package process authorizes none of them.
 
 ## 2. Hosting, HTTPS and environment contract
 
@@ -73,13 +217,13 @@ Access logs at every layer (proxy/CDN/web server/APM) must redact the **path tok
 
 ## 3. Durable storage and backups
 
-A proposed host layout (paths must be approved and adapted):
+A production release layout (reconfirm it on the target before deployment):
 
 ```text
-/srv/rezervogk/releases/<release-id>/    immutable code, vendor and build artifact
-/srv/rezervogk/current                 pointer to the selected release
-/srv/rezervogk/shared/.env              protected secrets; outside the public root
-/srv/rezervogk/shared/storage/          persistent application storage
+/var/www/rezervogk/releases/<release-id>/ immutable code, vendor and build artifact
+/var/www/rezervogk/current                pointer to the selected release
+/var/www/rezervogk/shared/storage/         persistent application storage
+/etc/gjej/rezervogk.env                   root-managed secrets; outside the public root
 ```
 
 Connect each release's `storage` to the shared storage directory **before** Artisan cache generation. The existing configuration then resolves:
@@ -105,7 +249,7 @@ Current code has no application `ShouldQueue` jobs or dispatch calls. Password-r
 The account-deletion file cleanup task is registered every minute with a 5-minute overlap lock. The transfer-mail outbox task is also registered every minute with a 15-minute overlap lock when the non-free launch model is enabled. Install cron **only on the approved single scheduler host**, as the application user, with the same secrets/storage/CLI runtime as FPM. This one Laravel scheduler entry is required for failed photo/receipt removals to be retried; successful immediate cleanup does not require cron. Example only; paths/binary/log handling require adaptation:
 
 ```cron
-* * * * * cd /srv/rezervogk/current && /usr/bin/php artisan schedule:run >> /srv/rezervogk/shared/storage/logs/scheduler.log 2>&1
+* * * * * cd /var/www/rezervogk/current && /usr/bin/php artisan schedule:run >> /var/www/rezervogk/shared/storage/logs/scheduler.log 2>&1
 ```
 
 The framework documents this [every-minute scheduler entry](https://laravel.com/docs/12.x/scheduling). No cron, timer or worker was installed during this audit. MariaDB's SQL `event_scheduler=OFF` is unrelated to Laravel's OS-driven scheduler. File overlap locks are per filesystem; do not start a scheduler per node with separate file caches. A future distributed scheduler arrangement requires shared lock storage and separate validation.
@@ -127,19 +271,19 @@ Isolated rehearsal proved `/up` returns 200 with an empty database: it must not 
 
 ## 5. Release sequence — after separate deployment approval
 
-1. **Build an identified immutable candidate away from the active checkout.** Record source/lockfile/artifact checksums and the previous release. In isolated CI/staging run tests, platform/security checks, TypeScript and Vite. Install production PHP dependencies from the lockfile in a separate artifact; never remove dev dependencies from this shared development checkout. Do not run Composer's setup/key-generation script.
+1. **Build an identified immutable candidate away from the active checkout.** Record source/lockfile/artifact checksums and the previous release. In an isolated test workspace run tests, dependency/security checks and TypeScript. Package a reviewed clean tag/commit using the local release tooling documented above; it performs the production Composer install from `composer.lock`, platform checks, `npm ci` and Vite build in a temporary clone. Never remove dev dependencies from this shared development checkout. Do not run Composer's setup/key-generation script.
 
    ```sh
-   composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
-   composer check-platform-reqs --no-dev
-   composer audit --no-dev
-   npm ci --include=dev
+   composer install --no-interaction
+   composer audit --locked
+   npm ci
    npm audit
    npm run typecheck
-   npm run build
+   python3 -m scripts.release.package_release --ref <tag-or-commit-sha> --output-dir <empty-local-output-directory>
+   python3 -m scripts.release.validate_artifact <artifact.tar.gz> --manifest <artifact.tar.gz.manifest.json>
    ```
 
-   PHP tests require dev dependencies in a separate test workspace and an explicitly isolated test DB. Do not copy node_modules, tests' private SMTP captures, local .env, development config/view caches, QA SQLite databases, backups, logs or `public/hot` into the public artifact. Keep `public/build/manifest.json` and hashed assets together. Retain old hashed assets long enough for existing browser clients; changing a release pointer must not immediately invalidate their asset URLs.
+   PHP tests require dev dependencies in a separate test workspace and an explicitly isolated test DB. The package tool refuses dirty tracked/untracked worktrees, never uses ignored/uncommitted files as its source, and refuses an output directory inside the checkout. It also excludes `node_modules`, local `.env`, development/runtime caches, QA SQLite databases, backups, logs, user files and `public/hot`; validation fails closed if forbidden content remains. Keep `public/build/manifest.json` and all referenced assets together. Retain old hashed assets long enough for existing browser clients; changing a release pointer must not immediately invalidate their asset URLs. The checksum is not a signature and does not authenticate an artifact when its manifest is supplied by the same untrusted party.
 2. **Rehearse on the exact target runtime/database engine.** Use synthetic users, dummy bank details and a loopback sink with outbound sending blocked. A restored real-data backup must stay private/network-isolated and must not send mail or expose contact details. Verify schema/data preservation, eligibility expiry, currencies, dated/weekly availability, auth/ownership, upload persistence and private receipts. Test TLS/proxy/cookie behavior through the real staging topology. Oracle MySQL 8.4 and patched PHP web SAPI remain unverified here.
 3. **Prepare recovery and quiet writes.** Confirm the exact target database/release, fresh backup/restore result, maintenance owner and rollback compatibility. Pause the scheduler/outbox runner and any workers; block business/admin writes during the planned cut-over. Maintenance mode does not stop arbitrary CLI processes and does not make `/up` fail. Bank disablement alone does not prevent an already-authorized admin reviewing a claim. Keep sending/submissions false and do not promote anyone.
 4. **Review the pending migration ledger.** The retained local schema currently lacks only the additive outbox migration. If the actual target differs, stop and review every pending migration. After approval/backup, apply only the reviewed paths; a new empty target needs its complete reviewed migration set. Do not seed demo accounts or roll back populated tables.

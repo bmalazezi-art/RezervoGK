@@ -14,7 +14,7 @@ export default function MarketplaceLayout({ children }: { children: ReactNode })
   useLocale();
   const inertia = usePage<{ pageKey?: Page; platformAnnouncement?: string; auth: { user: { id: number; name: string; email: string } | null; canReviewPayments: boolean; canReviewReports: boolean; canManageSystem: boolean } }>();
   const page = inertia.props.pageKey ?? pages[inertia.component];
-  return <div className="app"><Head title="Gjej portier" /><Header page={page} setPage={navigate} authenticated={!!inertia.props.auth.user} onLogout={() => router.post("/logout")} />
+  return <div className="app"><Head title="Gjej portier"><meta head-key="description" name="description" content={t("Gjej portier, kontakto drejtpërdrejt me WhatsApp ose telefon për ndeshjen tënde.")} /></Head><Header page={page} setPage={navigate} authenticated={!!inertia.props.auth.user} onLogout={() => router.post("/logout")} />
     {inertia.props.auth.canReviewPayments && <div className="section"><button className="text-link" onClick={() => router.visit("/admin/payments")}>{t("Administrimi i pagesave")}</button></div>}
     {inertia.props.auth.canReviewReports && <nav className="section admin-sidebar" aria-label={t("Administrimi")}>
       <Link href="/admin">{t("Përmbledhja")}</Link><Link href="/admin/users">{t("Përdoruesit")}</Link>

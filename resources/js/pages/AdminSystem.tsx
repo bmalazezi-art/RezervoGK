@@ -7,14 +7,14 @@ import "../../css/admin-dashboard.css";
 type Admin = { id: number; name: string; email: string; createdAt: string; isSuperAdmin: boolean };
 type Candidate = { id: number; name: string; email: string };
 type Audit = { id: number; action: string; previousValues: Record<string, unknown> | null; newValues: Record<string, unknown> | null; reason: string; actorName: string | null; targetName: string | null; createdAt: string };
-type Props = { settings: { registrationEnabled: boolean; announcement: string }; admins: Admin[]; candidates: Candidate[]; candidateSearch: string; canManageAdminAccess: boolean; audit: Audit[] };
+type Props = { settings: { registrationEnabled: boolean; announcement: string; announcementSq: string; announcementEn: string }; admins: Admin[]; candidates: Candidate[]; candidateSearch: string; canManageAdminAccess: boolean; audit: Audit[] };
 const date = (value: string) => new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 
 export default function AdminSystem({ settings, admins, candidates, candidateSearch, canManageAdminAccess, audit }: Props) {
   useLocale();
   const [candidate, setCandidate] = useState("");
   const [search, setSearch] = useState(candidateSearch);
-  const settingsForm = useForm({ registration_enabled: settings.registrationEnabled, announcement: settings.announcement, reason: "" });
+  const settingsForm = useForm({ registration_enabled: settings.registrationEnabled, announcement_sq: settings.announcementSq, announcement_en: settings.announcementEn, reason: "" });
   const adminForm = useForm({ is_admin: true, reason: "" });
   const saveSettings = (event: FormEvent) => {
     event.preventDefault();
@@ -49,8 +49,11 @@ export default function AdminSystem({ settings, admins, candidates, candidateSea
       </form>}
       <form className="panel admin-system-form" onSubmit={saveSettings}><div className="panel-head"><div><h2>{t("Cilësimet publike")}</h2><span>{t("Ndryshimet zbatohen në faqen publike dhe regjistrim.")}</span></div></div>
         <label className="admin-system-checkbox"><input type="checkbox" checked={settingsForm.data.registration_enabled} onChange={event => settingsForm.setData("registration_enabled", event.target.checked)} />{t("Lejo regjistrimet e reja")}</label>
-        <label>{t("Njoftim publik (opsional)")}<textarea value={settingsForm.data.announcement} onChange={event => settingsForm.setData("announcement", event.target.value)} maxLength={280} rows={3} /></label>
-        <small>{settingsForm.data.announcement.length}/280</small>
+        {settings.announcement && <p className="admin-system-note">{t("Njoftimi i mëparshëm nuk ka gjuhë të regjistruar dhe nuk shfaqet publikisht. Kopjoje në fushën përkatëse nëse dëshiron ta përdorësh.")}<br /><strong>{settings.announcement}</strong></p>}
+        <label>{t("Njoftim publik në shqip (opsional)")}<textarea value={settingsForm.data.announcement_sq} onChange={event => settingsForm.setData("announcement_sq", event.target.value)} maxLength={280} rows={3} /></label>
+        <small>{settingsForm.data.announcement_sq.length}/280</small>
+        <label>{t("Njoftim publik në anglisht (opsional)")}<textarea value={settingsForm.data.announcement_en} onChange={event => settingsForm.setData("announcement_en", event.target.value)} maxLength={280} rows={3} /></label>
+        <small>{settingsForm.data.announcement_en.length}/280</small>
         <label>{t("Arsyeja e ndryshimit (minimumi 10 karaktere)")}<textarea value={settingsForm.data.reason} onChange={event => settingsForm.setData("reason", event.target.value)} minLength={10} maxLength={500} required /></label>
         {settingsForm.errors.reason && <small className="admin-inline-status">{settingsForm.errors.reason}</small>}<button className="btn btn-primary" disabled={settingsForm.processing}>{t("Ruaj cilësimet")}</button>
       </form>

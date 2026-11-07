@@ -37,10 +37,10 @@ class GoalkeeperDatabaseTest extends TestCase
         $this->assertDatabaseCount('countries', 3);
         $curatedCityCount = collect(MarketplaceCitySeeder::locations())->sum(fn (array $cities) => count($cities));
         $this->assertDatabaseCount('cities', $curatedCityCount);
-        $this->assertDatabaseCount('match_formats', 3);
+        $this->assertDatabaseCount('match_formats', 5);
         $this->assertDatabaseCount('goalkeeper_profiles', 4);
         $this->assertDatabaseCount('goalkeeper_contacts', 4);
-        $this->assertDatabaseCount('goalkeeper_profile_match_format', 8);
+        $this->assertDatabaseCount('goalkeeper_profile_match_format', 9);
         $this->assertDatabaseCount('users', 4); // Owners belong to the public test fixtures; seeding adds no accounts.
         $profile = GoalkeeperProfile::where('slug', 'leon-dervishi')->firstOrFail();
         $this->assertSame(700, $profile->price_cents);
@@ -94,6 +94,8 @@ class GoalkeeperDatabaseTest extends TestCase
         $this->get('/browse?format=7v7')->assertInertia(fn (Assert $page) => $page
             ->has('keepers', 2)->where('keepers.0.name', 'Leon Dervishi')->where('keepers.1.name', 'Enis Hasani'));
         $this->get("/browse?country_id={$country->id}")->assertInertia(fn (Assert $page) => $page->has('keepers', 2));
+        $this->get('/browse?format=9v9')->assertInertia(fn (Assert $page) => $page
+            ->has('keepers', 1)->where('keepers.0.name', 'Enis Hasani'));
     }
 
     public function test_country_search_without_city_shows_all_goalkeepers_and_indicates_requested_date_availability(): void
@@ -145,7 +147,7 @@ class GoalkeeperDatabaseTest extends TestCase
         $this->assertDatabaseMissing('goalkeeper_contacts', ['goalkeeper_profile_id' => $id]);
         $this->assertDatabaseMissing('goalkeeper_profile_match_format', ['goalkeeper_profile_id' => $id]);
         $this->assertSame(3, GoalkeeperContact::count());
-        $this->assertSame(3, MatchFormat::count());
+        $this->assertSame(5, MatchFormat::count());
     }
 
     public function test_an_empty_database_returns_an_empty_listing(): void
@@ -156,7 +158,7 @@ class GoalkeeperDatabaseTest extends TestCase
 
     public static function invalidFilters(): array
     {
-        return [['city_id=999'], ['city_id[]=1'], ['country_id=999'], ['format=11v11'], ['max_price=-1'], ['max_price=abc'], ['max_price=7.001'], ['max_price=1000001']];
+        return [['city_id=999'], ['city_id[]=1'], ['country_id=999'], ['format=10v10'], ['max_price=-1'], ['max_price=abc'], ['max_price=7.001'], ['max_price=1000001']];
     }
 
     #[DataProvider('invalidFilters')]

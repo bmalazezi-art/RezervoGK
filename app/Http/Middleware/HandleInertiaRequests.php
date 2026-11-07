@@ -22,7 +22,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'locale' => app()->getLocale(),
             'freeLaunch' => LaunchModel::isFree(),
-            'platformAnnouncement' => fn () => (string) PlatformSetting::value('announcement', ''),
+            'platformAnnouncement' => fn () => (string) PlatformSetting::value('announcement_'.app()->getLocale(), ''),
             'auth' => fn () => ['user' => $request->user()?->only(['id', 'name', 'email']), 'canReviewPayments' => ! LaunchModel::isFree() && ($request->user()?->can('review-payments') ?? false), 'canReviewReports' => $request->user()?->can('review-reports') ?? false, 'canManageSystem' => $request->user()?->can('manage-system-settings') ?? false],
             'flash' => fn () => ['status' => $request->session()->get('status')],
         ];

@@ -63,13 +63,21 @@ class GoalkeeperManagementTest extends TestCase
             ->where('keeper.whatsapp', '355681234567'));
     }
 
+    public function test_owner_can_select_nine_a_side_format(): void
+    {
+        $this->actingAs($this->owner)->patch('/keepers/'.$this->profile->id, $this->data(['formats' => ['9v9']]))
+            ->assertRedirect('/dashboard');
+
+        $this->assertSame(['9v9'], $this->profile->fresh()->matchFormats->pluck('code')->all());
+    }
+
     public static function invalidFields(): array
     {
         return [
             [['experience_years' => -1], 'experience_years'], [['experience_years' => 101], 'experience_years'],
             [['experience_years' => 1.5], 'experience_years'], [['languages' => []], 'languages'],
             [['languages' => ['English', 'english']], 'languages.0'], [['languages' => [str_repeat('a', 41)]], 'languages.0'],
-            [['formats' => []], 'formats'], [['formats' => ['11v11']], 'formats.0'],
+            [['formats' => []], 'formats'], [['formats' => ['10v10']], 'formats.0'],
             [['whatsapp' => 'bad'], 'whatsapp'], [['price' => '7.251'], 'price'],
             [['photo_path' => 'keeper-photos/another-user.jpg'], 'photo_path'], [['photo_url' => 'https://example.test/image.jpg'], 'photo_url'],
         ];

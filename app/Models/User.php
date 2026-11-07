@@ -13,6 +13,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     public const SUPER_ADMIN_EMAIL = 'bmalazezi@gmail.com';
+    public const CURRENT_POLICY_VERSION = '2026-10-29';
 
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -56,6 +57,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'accepted_terms_version',
+        'accepted_terms_at',
     ];
 
     /**
@@ -82,6 +85,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'is_suspended' => 'boolean',
+            'accepted_terms_at' => 'immutable_datetime',
         ];
     }
 }

@@ -45,7 +45,7 @@ class GoalkeeperCurrencyTest extends TestCase
         $profile->price_cents = $amount;
         $user->goalkeeperProfile()->save($profile);
         $profile->contact()->create(['phone' => '+38344123456', 'whatsapp' => '38344123456']);
-        $profile->matchFormats()->attach(1);
+        $profile->matchFormats()->attach(\App\Models\MatchFormat::where('code', '5v5')->firstOrFail()->getKey());
 
         return $profile;
     }

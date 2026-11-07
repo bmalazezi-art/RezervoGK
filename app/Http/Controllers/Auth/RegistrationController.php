@@ -39,6 +39,8 @@ class RegistrationController extends Controller
             $user = DB::transaction(function () use ($data, $path) {
                 $user = User::create([
                     'name' => $data['name'], 'email' => $data['email'], 'password' => $data['password'],
+                    'accepted_terms_version' => User::CURRENT_POLICY_VERSION,
+                    'accepted_terms_at' => now(),
                 ]);
                 if (! LaunchModel::isFree()) {
                     GoalkeeperTrial::start($user);

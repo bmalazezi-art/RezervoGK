@@ -16,7 +16,7 @@ Gjej portier — {{ $title }}
 {{ __('Hap panelin:') }}
 {!! $dashboardUrl !!}
 
-{{ __('Nuk ka rinovim ose debitim automatik. Pagesat e ndeshjeve mbeten në dorë mes organizatorit dhe portierit.') }}
+{{ __('Nuk ka rinovim ose debitim automatik. Organizatori dhe portieri merren vesh drejtpërdrejt për mënyrën e pagesës dhe shumën. Gjej portier nuk mbledh, proceson apo transferon pagesat për ndeshje.') }}
 {{ __('Me respekt,') }}
 {{ __('Ekipi Gjej portier') }}
 {{ __('Të gjitha të drejtat e rezervuara.') }}

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
 :root {
@@ -222,6 +222,8 @@ footer { background: var(--navy); color: white; padding: 70px max(5vw, 30px) 28p
 }
 
 .information-page { padding-bottom: 72px; }
+.information-page { font-family: "DM Sans", sans-serif; }
+.information-page h1, .information-page h2, .information-page .btn { font-family: "Manrope", sans-serif; }
 .information-page .dash-top,
 .information-page .information-content { max-width: 1000px; }
 .information-page .dash-top { padding-top: 46px; padding-bottom: 24px; }
@@ -265,6 +267,10 @@ footer { background: var(--navy); color: white; padding: 70px max(5vw, 30px) 28p
   .week strong { font-size: 13px; }
   .admin-table-wrap { max-width: 100%; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
   .admin-table-wrap table { min-width: 640px; }
+  button, [role="button"], .btn { min-width: 24px; min-height: 44px; }
+  .menu-btn { width: 44px; height: 44px; padding: 0; }
+  .lang-switch button { min-width: 24px; min-height: 44px; }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea { min-height: 44px; }
 }
 @media (max-width: 360px) {
   .section { padding-left: 14px; padding-right: 14px; }
@@ -275,4 +281,10 @@ footer { background: var(--navy); color: white; padding: 70px max(5vw, 30px) 28p
   .week { grid-template-columns: repeat(7, 48px); }
   .profile-image { height: 350px; }
   .form-grid input, .form-grid select, .register-form input, .register-form select, .register-form textarea { min-height: 46px; }
+}
+
+/* Keep the mobile hero compact so the next section is not pushed far below it. */
+@media (max-width: 640px) {
+  .hero { min-height: 760px; padding-bottom: 20px; }
+  .hero-content { padding-top: 220px; }
 }

@@ -17,13 +17,13 @@ class GoalkeeperDemoSeeder extends Seeder
             foreach (['XK' => 'Kosovë', 'AL' => 'Shqipëri', 'MK' => 'Maqedoni e Veriut'] as $code => $name) {
                 Country::updateOrCreate(['code' => $code], ['name' => $name]);
             }
-            $formats = collect(['5v5', '6v6', '7v7', '11v11'])->mapWithKeys(
+            $formats = collect(['5v5', '6v6', '7v7', '9v9', '11v11'])->mapWithKeys(
                 fn ($code) => [$code => MatchFormat::firstOrCreate(['code' => $code])->id]
             );
             $rows = [
                 ['ardit-krasniqi', 'Ardit Krasniqi', 'XK', 'Prishtinë', 1000, 4.9, 28, ['5v5', '6v6'], '1721909795454-1cf6ee50f8cf', 'Sot', '38344111222', true],
                 ['leon-dervishi', 'Leon Dervishi', 'AL', 'Tiranë', 700, 4.8, 19, ['5v5', '7v7'], '1711812176453-5b70a6f0a984', 'Nesër', '35568111222', true],
-                ['enis-hasani', 'Enis Hasani', 'MK', 'Shkup', 1000, 5, 34, ['6v6', '7v7'], '1599204606471-32a75bc663e9', 'Sot', '38970111222', true],
+                ['enis-hasani', 'Enis Hasani', 'MK', 'Shkup', 1000, 5, 34, ['6v6', '7v7', '9v9'], '1599204606471-32a75bc663e9', 'Sot', '38970111222', true],
                 ['altin-berisha', 'Altin Berisha', 'XK', 'Prizren', 500, 4.7, 14, ['5v5', '6v6'], '1792005121928-a8a295721f68', 'Të premten', '38349111222', false],
             ];
             foreach ($rows as [$slug, $name, $countryCode, $cityName, $cents, $rating, $reviews, $codes, $photo, $available, $phone, $featured]) {

@@ -18,7 +18,7 @@ export default function Home({ keepers, cities, countries, today, initialDate, m
       <div className="hero-content">
         <div className="eyebrow light"><span /> {t("PORTIERI QË TË DUHET, KUR TË DUHET")}</div>
         <h1>{t("Gjej portierin.")}<br /><em>{t("Luaj ndeshjen.")}</em></h1>
-        <p>{t("Gjej portierë pranë teje dhe pyeti për ndeshjen e radhës. Kontakto direkt, pa llogari, dhe paguaj në fushë.")}</p>
+        <p>{t("Gjej portierë pranë teje dhe pyeti për ndeshjen e radhës. Kontakto direkt, pa llogari, dhe merruni vesh drejtpërdrejt për pagesën.")}</p>
         <SearchBar cities={cities} countries={countries} countryId={country} onCountryChange={id => { setCountry(id); setCity(""); }} cityId={city} onCityChange={setCity} date={date} onDateChange={setDate} minDate={today} maxDate={maxDate} onSearch={() => router.get("/browse", { ...(country ? { country_id: country } : {}), ...(city ? { city_id: city } : {}), ...(date ? { date } : {}) })} />
         <div className="hero-proof"><Icon name="users" /><div><strong>{t("Pa llogari për organizatorët")}</strong><span>{t("Kontakt direkt në WhatsApp ose telefon")}</span></div></div>
       </div>
@@ -37,7 +37,7 @@ export default function Home({ keepers, cities, countries, today, initialDate, m
       <div className="section how-inner">
         <div className="section-head"><div><div className="eyebrow light"><span /> {t("SI FUNKSIONON")}</div><h2>{t("Tri hapa. Një ndeshje")}<br />{t("më e mirë.")}</h2></div><p>{t("Kërko sipas qytetit dhe datës. Kontakto portierin dhe konfirmoni ndeshjen mes jush.")}</p></div>
         <div className="steps">
-          {[["01", "Kërko", "Zgjidh qytetin, datën dhe formatin e ndeshjes."], ["02", "Kontakto", "Shkruaj në WhatsApp ose telefono, pa krijuar llogari."], ["03", "Luaj", "Konfirmoni mes vete dhe paguaj në dorë direkt në fushë."]].map(([n, title, d], i) => <div className="step" key={n}><div className="step-icon"><span>{n}</span><Icon name={i === 0 ? "search" : i === 1 ? "whatsapp" : "check"} size={27} /></div><h3>{t(title)}</h3><p>{t(d)}</p>{i < 2 && <i className="step-line" />}</div>)}
+          {[["01", "Kërko", "Zgjidh qytetin, datën dhe formatin e ndeshjes."], ["02", "Kontakto", "Shkruaj në WhatsApp ose telefono, pa krijuar llogari."], ["03", "Luaj", "Organizatori dhe portieri merren vesh drejtpërdrejt për mënyrën e pagesës dhe shumën. Gjej portier nuk mbledh, proceson apo transferon pagesat për ndeshje."]].map(([n, title, d], i) => <div className="step" key={n}><div className="step-icon"><span>{n}</span><Icon name={i === 0 ? "search" : i === 1 ? "whatsapp" : "check"} size={27} /></div><h3>{t(title)}</h3><p>{t(d)}</p>{i < 2 && <i className="step-line" />}</div>)}
         </div>
       </div>
     </section>
