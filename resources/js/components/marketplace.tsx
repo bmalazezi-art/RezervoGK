@@ -41,10 +41,11 @@ export const Button = ({ children, variant = "primary", className = "", onClick,
 export function Header({ page, setPage, authenticated, onLogout }: { page: Page; setPage: (p: Page) => void; authenticated: boolean; onLogout: () => void }) {
   useLocale();
   const [open, setOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const go = (p: Page) => { setPage(p); setOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const confirmLogout = () => {
     setOpen(false);
-    if (window.confirm(t("A dëshiron të dalësh nga llogaria?"))) onLogout();
+    setLogoutConfirmOpen(true);
   };
   return <header className="header">
     <div className="nav-wrap">
@@ -61,6 +62,17 @@ export function Header({ page, setPage, authenticated, onLogout }: { page: Page;
         <button className="menu-btn" onClick={() => setOpen(!open)} aria-label={open ? t("Mbyll menynë") : t("Hap menynë")} aria-expanded={open}><Icon name={open ? "close" : "menu"} /></button>
       </div>
     </div>
+    {logoutConfirmOpen && <div className="logout-dialog-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setLogoutConfirmOpen(false); }}>
+      <section className="logout-dialog" role="alertdialog" aria-modal="true" aria-labelledby="logout-dialog-title" aria-describedby="logout-dialog-description">
+        <span className="logout-dialog-mark"><Icon name="close" size={21} /></span>
+        <h2 id="logout-dialog-title">{t("Dil nga llogaria")}</h2>
+        <p id="logout-dialog-description">{t("A dëshiron të dalësh nga llogaria?")}</p>
+        <div className="logout-dialog-actions">
+          <Button variant="outline" onClick={() => setLogoutConfirmOpen(false)}>{t("Qëndro i kyçur")}</Button>
+          <Button onClick={() => { setLogoutConfirmOpen(false); onLogout(); }}>{t("Po, dil")}</Button>
+        </div>
+      </section>
+    </div>}
   </header>;
 }
 

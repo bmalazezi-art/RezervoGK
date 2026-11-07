@@ -271,7 +271,17 @@ footer { background: var(--navy); color: white; padding: 70px max(5vw, 30px) 28p
   .menu-btn { width: 44px; height: 44px; padding: 0; }
   .lang-switch button { min-width: 24px; min-height: 44px; }
   input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea { min-height: 44px; }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea { font-size: 16px !important; }
 }
+
+.logout-dialog-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgb(4 16 14 / 64%); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+.logout-dialog { width: min(100%, 390px); padding: 28px; border: 1px solid rgb(255 255 255 / 10%); border-radius: 20px; background: #10201d; color: #f5f7f1; box-shadow: 0 24px 80px rgb(0 0 0 / 36%); text-align: center; }
+.logout-dialog-mark { display: grid; place-items: center; width: 46px; height: 46px; margin: 0 auto 15px; border: 1px solid rgb(183 218 57 / 35%); border-radius: 50%; color: #c2e34b; background: rgb(183 218 57 / 10%); }
+.logout-dialog h2 { margin: 0; font-size: 20px; letter-spacing: -.3px; }
+.logout-dialog p { margin: 9px 0 23px; color: #c4d0c9; font-size: 14px; line-height: 1.55; }
+.logout-dialog-actions { display: flex; gap: 10px; }
+.logout-dialog-actions .btn { flex: 1; min-height: 46px; padding-inline: 12px; }
+@media (max-width: 420px) { .logout-dialog { padding: 24px 18px 18px; border-radius: 18px; } .logout-dialog-actions { flex-direction: column-reverse; } }
 @media (max-width: 360px) {
   .section { padding-left: 14px; padding-right: 14px; }
   .nav-wrap { padding: 0 12px; }
