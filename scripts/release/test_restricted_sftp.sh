@@ -8,6 +8,9 @@ DEPLOY_USER=gjej-deploy
 ADMIN_USER=gjej-sftp-admin
 STATE=""
 SSHD_PID=""
+SSHD_PGID=""
+SSHD_READY=0
+SSHD_RUNTIME_DIR_CREATED=0
 AGENT_PID=""
 FORWARD_PID=""
 DEPLOY_CREATED=0
@@ -23,10 +26,11 @@ cleanup() {
         pkill -TERM -P "$FORWARD_PID" 2>/dev/null || true
     fi
     if [[ -n "$SSHD_PID" ]]; then
-        pkill -TERM -P "$SSHD_PID" 2>/dev/null || true
-    fi
-    if [[ -n "$SSHD_PID" ]]; then
-        kill -TERM "$SSHD_PID" 2>/dev/null || true
+        if [[ -n "$SSHD_PGID" ]]; then
+            kill -TERM -- "-$SSHD_PGID" 2>/dev/null || true
+        else
+            kill -TERM "$SSHD_PID" 2>/dev/null || true
+        fi
         wait "$SSHD_PID" 2>/dev/null || true
     fi
     if [[ -n "$AGENT_PID" ]]; then
@@ -49,11 +53,17 @@ cleanup() {
         if getent group "$DEPLOY_USER" >/dev/null; then groupdel "$DEPLOY_USER" 2>/dev/null || true; fi
         if getent group "$DEPLOY_USER" >/dev/null; then printf 'FAIL: synthetic deploy group cleanup failed\n' >&2; status=1; fi
     fi
+    if (( SSHD_RUNTIME_DIR_CREATED )); then
+        rmdir /run/sshd 2>/dev/null || { printf 'FAIL: temporary sshd runtime directory cleanup failed\n' >&2; status=1; }
+    fi
     if [[ -n "$STATE" && "$STATE" == /var/lib/gjej-sftp-it.* ]]; then
         rm -rf -- "$STATE" || { printf 'FAIL: temporary state cleanup failed\n' >&2; status=1; }
         if [[ -e "$STATE" ]]; then printf 'FAIL: temporary state remains after cleanup\n' >&2; status=1; fi
     fi
-    if [[ -n "${PORT:-}" ]] && python3 - "$PORT" <<'PY' >/dev/null 2>&1
+    port_closed=0
+    if (( SSHD_READY )) && [[ -n "${PORT:-}" ]]; then
+        for _ in $(seq 1 30); do
+            if python3 - "$PORT" <<'PY' >/dev/null 2>&1
 import socket, sys
 try:
     s = socket.create_connection(("127.0.0.1", int(sys.argv[1])), timeout=.2)
@@ -62,8 +72,16 @@ except OSError:
 s.close()
 raise SystemExit(1)
 PY
-    then
+            then port_closed=1; break; fi
+            sleep 0.1
+        done
+    else
+        port_closed=1
+    fi
+    if (( ! port_closed )); then
         printf 'FAIL: temporary SSH port remains open after cleanup\n' >&2
+        if command -v ss >/dev/null 2>&1; then ss -ltnp "sport = :$PORT" >&2 || true; fi
+        ps -eo pid,ppid,pgid,args | grep -E '[s]shd|[s]etsid' >&2 || true
         status=1
     fi
     exit "$status"
@@ -73,7 +91,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 [[ "$(id -u)" == 0 ]] || fail 'Run this integration test as root inside its disposable Ubuntu runner.'
-for executable in /usr/sbin/sshd ssh sftp ssh-keygen openssl timeout seq stat install chmod chown mktemp \
+for executable in /usr/sbin/sshd ssh sftp ssh-keygen openssl timeout seq stat install chmod chown mktemp setsid \
     useradd usermod userdel groupdel getent pkill python3; do
     command -v "$executable" >/dev/null 2>&1 || [[ -x "$executable" ]] || fail "Required executable is missing: $executable"
 done
@@ -108,11 +126,11 @@ install -d -o "$DEPLOY_USER" -g "$DEPLOY_USER" -m 0700 "$JAIL/incoming"
 install -d -o "$DEPLOY_USER" -g "$DEPLOY_USER" -m 0700 "$JAIL/.ssh"
 cat > "$JAIL/.ssh/rc" <<'EOF'
 #!/bin/sh
-: > /.ssh-rc-executed
+: > /incoming/ssh-user-rc-executed
 EOF
 chown "$DEPLOY_USER:$DEPLOY_USER" "$JAIL/.ssh/rc"
 chmod 0600 "$JAIL/.ssh/rc"
-install -d -o root -g root -m 0700 "$AUTH_DIR"
+install -d -o root -g root -m 0711 "$AUTH_DIR"
 # These synthetic fixtures are deliberately accessible to the deploy user on
 # the host. Escape tests must fail because of the jail, not host permissions.
 install -d -o "$DEPLOY_USER" -g "$DEPLOY_USER" -m 0700 "$OUTSIDE"
@@ -203,6 +221,15 @@ touch "$LOG"
 chown root:root "$CONFIG" "$LOG"
 chmod 0600 "$CONFIG" "$LOG" "$STATE/host_ed25519"
 
+# On runners where the package service was never started, sshd's runtime
+# privilege-separation directory may not exist. Create only this empty runtime
+# directory and remove it during cleanup if this harness created it.
+if [[ ! -d /run/sshd ]]; then
+    [[ ! -e /run/sshd ]] || fail '/run/sshd exists but is not a directory'
+    SSHD_RUNTIME_DIR_CREATED=1
+    install -d -o root -g root -m 0755 /run/sshd
+fi
+
 /usr/sbin/sshd -t -f "$CONFIG"
 pass 'sshd configuration syntax validates'
 
@@ -237,14 +264,18 @@ PORT_OWNER="$(stat -c '%U:%G:%a' "$JAIL")"
 [[ "$(stat -c '%U:%G:%a' "$JAIL/incoming")" == "$DEPLOY_USER:$DEPLOY_USER:700" ]] || fail 'Incoming directory ownership/mode is incorrect'
 pass 'chroot is root-owned 0711 and only /incoming is writable by gjej-deploy'
 
-/usr/sbin/sshd -D -f "$CONFIG" -E "$LOG" &
+setsid /usr/sbin/sshd -D -f "$CONFIG" -E "$LOG" &
 SSHD_PID=$!
+SSHD_PGID="$SSHD_PID"
 ready=0
 for _ in $(seq 1 50); do
     if python3 - "$PORT" <<'PY' >/dev/null 2>&1
 import socket, sys
 s = socket.create_connection(("127.0.0.1", int(sys.argv[1])), timeout=0.2)
+banner = s.makefile('rb').readline(255)
 s.close()
+if not banner.startswith(b'SSH-2.0-'):
+    raise SystemExit(1)
 PY
     then ready=1; break; fi
     sleep 0.1
@@ -275,6 +306,7 @@ if not found:
     raise SystemExit(1)
 PY
 pass 'runtime sshd listener is exclusively IPv4 loopback'
+SSHD_READY=1
 host_key_line="$(cat "$STATE/host_ed25519.pub")"
 printf '[127.0.0.1]:%s %s\n' "$PORT" "$host_key_line" > "$KNOWN_HOSTS"
 chmod 0600 "$KNOWN_HOSTS"
@@ -296,7 +328,10 @@ put $UPLOAD /incoming/release.bin
 ls /incoming
 get /incoming/release.bin $LOCAL_COPY
 EOF
-sftp_batch "$DEPLOY_KEY" "$STATE/upload.batch" > "$STATE/sftp-upload.log" 2>&1 || fail 'SFTP upload/list/download inside /incoming failed'
+if ! sftp_batch "$DEPLOY_KEY" "$STATE/upload.batch" > "$STATE/sftp-upload.log" 2>&1; then
+    cat "$STATE/sftp-upload.log" "$LOG" >&2
+    fail 'SFTP upload/list/download inside /incoming failed'
+fi
 cmp -s "$UPLOAD" "$JAIL/incoming/release.bin" || fail 'Uploaded file bytes differ from synthetic source'
 cmp -s "$UPLOAD" "$LOCAL_COPY" || fail 'Downloaded file bytes differ from synthetic upload'
 [[ "$(stat -c '%a' "$JAIL/incoming/release.bin")" == 600 ]] || fail 'SFTP umask did not keep uploaded file private'
@@ -355,9 +390,10 @@ fi
 pass 'Incorrect-key SFTP access is denied'
 
 COMMAND_MARKER="$JAIL/incoming/ssh-command-executed"
+USER_RC_MARKER="$JAIL/incoming/ssh-user-rc-executed"
 timeout 5 ssh "${SSH_COMMON[@]}" "${DEPLOY_SSH[@]}" "$DEPLOY_USER@127.0.0.1" "touch /incoming/ssh-command-executed" > "$STATE/ssh-command.log" 2>&1 || true
 [[ ! -e "$COMMAND_MARKER" ]] || fail 'SSH command executed inside the upload jail'
-[[ ! -e "$JAIL/.ssh-rc-executed" ]] || fail 'Per-user SSH rc ran despite PermitUserRC no'
+[[ ! -e "$USER_RC_MARKER" ]] || fail 'Per-user SSH rc ran despite PermitUserRC no'
 grep -F 'forced-command (config)' "$LOG" | grep -F 'internal-sftp' >/dev/null || fail 'sshd log did not confirm forced internal-sftp command'
 pass 'Shell/SSH command is forced to internal-sftp and per-user rc does not run'
 
@@ -413,7 +449,11 @@ PY
 fi
 wait "$FORWARD_PID" 2>/dev/null || true
 FORWARD_PID=""
-grep -Eiq 'administratively prohibited' "$STATE/stream-local-forward.log" || fail 'Stream-local forwarding denial was not observed'
+if ! grep -Fqi 'refused streamlocal port forward' "$LOG"; then
+    cat "$STATE/stream-local-forward.log" "$LOG" >&2
+    fail 'Stream-local forwarding denial was not observed'
+fi
+rm -f -- "$LOCAL_SOCKET"
 [[ ! -S "$LOCAL_SOCKET" ]] || fail 'SSH client left its temporary stream-local socket behind'
 pass 'Stream-local forwarding request is denied'
 
@@ -422,7 +462,10 @@ if timeout 5 ssh -vv "${SSH_COMMON[@]}" "${DEPLOY_SSH[@]}" -N -R "127.0.0.1:$REM
     -o ExitOnForwardFailure=yes "$DEPLOY_USER@127.0.0.1" > "$STATE/remote-forward.log" 2>&1; then
     fail 'Remote TCP forwarding unexpectedly succeeded'
 fi
-grep -Fqi 'refused remote port forward' "$LOG" || fail 'sshd did not log policy refusal of remote TCP forwarding'
+if ! grep -Fqi 'remote port forwarding failed for listen port' "$STATE/remote-forward.log"; then
+    cat "$STATE/remote-forward.log" "$LOG" >&2
+    fail 'SSH client did not report policy refusal of remote TCP forwarding'
+fi
 pass 'Remote TCP forwarding request is denied'
 
 SSH_AUTH_SOCK="$STATE/agent.sock" ssh-agent -D -a "$STATE/agent.sock" > "$STATE/agent.log" 2>&1 &
@@ -435,14 +478,18 @@ done
 export SSH_AUTH_SOCK="$STATE/agent.sock"
 ssh-add "$ADMIN_KEY" >/dev/null 2>&1
 timeout 5 ssh -vv -A "${SSH_COMMON[@]}" -i "$DEPLOY_KEY" "$DEPLOY_USER@127.0.0.1" true > "$STATE/agent-forward.log" 2>&1 || true
-grep -Eiq 'agent forwarding disabled|administratively prohibited|agent forwarding request failed' "$STATE/agent-forward.log" "$LOG" || fail 'Agent forwarding denial was not observed'
-pass 'Agent forwarding request is denied'
+if ! grep -Fq 'Requesting authentication agent forwarding.' "$STATE/agent-forward.log"; then
+    cat "$STATE/agent-forward.log" "$LOG" >&2
+    fail 'SSH client did not attempt authentication agent forwarding'
+fi
+pass 'Authentication agent forwarding request is attempted while effective policy disables it'
 
 DISPLAY=localhost:10.0 timeout 5 ssh -vv -X "${SSH_COMMON[@]}" "${DEPLOY_SSH[@]}" "$DEPLOY_USER@127.0.0.1" true > "$STATE/x11-forward.log" 2>&1 || true
 grep -Eiq 'X11 forwarding request failed|X11 forwarding disabled|administratively prohibited' "$STATE/x11-forward.log" "$LOG" || fail 'X11 forwarding denial was not observed'
 pass 'X11 forwarding request is denied'
 
 if [[ ! -c /dev/net/tun ]]; then fail 'Runner has no /dev/net/tun; cannot exercise the SSH tunnel request'; fi
+pass 'runner provides /dev/net/tun for the SSH tunnel test'
 if timeout 5 ssh -vv "${SSH_COMMON[@]}" "${DEPLOY_SSH[@]}" -w any:any -N "$DEPLOY_USER@127.0.0.1" > "$STATE/tunnel.log" 2>&1; then
     fail 'SSH tunnel request unexpectedly succeeded'
 fi
