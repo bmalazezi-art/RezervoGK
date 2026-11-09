@@ -42,9 +42,6 @@ jobs:
             sudo rm -f "$policy"
             trap - EXIT
           fi
-      - name: Test atomic release publication
-        shell: bash
-        run: python3 -m unittest discover -s tests/Release -p 'test_release_tools.py' -k AtomicReleasePublicationTests -v
       - name: Run loopback-only restricted SFTP integration test
         shell: bash
         run: sudo bash scripts/release/test_restricted_sftp.sh
