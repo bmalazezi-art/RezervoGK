@@ -1,0 +1,105 @@
+name: Gjej Portier PR validation
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PR validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      APP_ENV: testing
+      APP_DEBUG: "true"
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      APP_LOCALE: sq
+      APP_FALLBACK_LOCALE: en
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ":memory:"
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+      CACHE_STORE: array
+      TRANSACTIONAL_MAIL_ENABLED: 'true'
+      PYTHONDONTWRITEBYTECODE: "1"
+
+    steps:
+      - name: Check out pull request source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # 2.35.5
+        with:
+          php-version: "8.4"
+          extensions: bcmath, curl, gd, intl, mbstring, pdo_sqlite, sqlite3, zip
+          coverage: none
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Select relevant application test suites
+        id: paths
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          changed_files="$(git diff --name-only "$PR_BASE_SHA" "$PR_HEAD_SHA")"
+          if grep -Eq '^(app/|bootstrap/|config/|database/|lang/|resources/|routes/|tests/(Feature|Unit)/|composer\.(json|lock)$|phpunit\.xml$)' <<< "$changed_files"; then
+            echo 'laravel=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'laravel=false' >> "$GITHUB_OUTPUT"
+          fi
+          if grep -Eq '^(resources/|lang/|tests/Frontend/|package(-lock)?\.json$|tsconfig\.json$|vite\.config\.ts$)' <<< "$changed_files"; then
+            echo 'frontend=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'frontend=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check PHP formatting
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.sha }}
+        run: |
+          mapfile -d '' php_files < <(git diff --name-only --diff-filter=ACMR -z "$PR_BASE_SHA" "$PR_HEAD_SHA" -- '*.php')
+          if (( ${#php_files[@]} == 0 )); then
+            echo 'No changed PHP files; skipping Pint.'
+          else
+            vendor/bin/pint --test "${php_files[@]}"
+          fi
+
+      - name: Run Laravel feature tests
+        if: steps.paths.outputs.laravel == 'true'
+        run: php artisan test tests/Feature
+
+      - name: Run frontend tests
+        if: steps.paths.outputs.frontend == 'true'
+        run: node --test tests/Frontend/*.test.mjs
+
+      - name: Validate TypeScript
+        run: npm run typecheck
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Run release tooling tests
+        run: python3 -m unittest discover -s tests/Release -p 'test_release_tools.py' -v

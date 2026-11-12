@@ -1,0 +1,83 @@
+name: Gjej Portier signed release build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Full commit SHA on main to build (manual rebuild only)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gjej-release-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-release:
+    name: Build verified release candidate
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the selected source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.commit_sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Require the selected commit to belong to main
+        shell: bash
+        env:
+          SELECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.commit_sha || github.sha }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$SELECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'A full 40-character commit SHA is required.' >&2; exit 1; }
+          git cat-file -e "$SELECTED_SHA^{commit}"
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$SELECTED_SHA" FETCH_HEAD || {
+            echo 'Selected commit is not reachable from origin/main.' >&2
+            exit 1
+          }
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # 2.35.5
+        with:
+          php-version: '8.4'
+          extensions: bcmath, curl, gd, intl, mbstring, pdo_mysql, pdo_sqlite, sqlite3, zip
+          coverage: none
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+
+      - name: Build production release archive and manifest
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          SELECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.commit_sha || github.sha }}
+          OUTPUT_DIR: ${{ runner.temp }}/gjej-release-output
+        run: |
+          set -Eeuo pipefail
+          mkdir -m 0700 "$OUTPUT_DIR"
+          python3 -m scripts.release.package_release \
+            --ref "$SELECTED_SHA" \
+            --output-dir "$OUTPUT_DIR"
+          python3 -m unittest discover -s tests/Release -p 'test_release_tools.py' -v
+
+      - name: Publish unsigned candidate for offline signing
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v4.4.3
+        with:
+          name: gjej-release-${{ github.event_name == 'workflow_dispatch' && inputs.commit_sha || github.sha }}
+          path: ${{ runner.temp }}/gjej-release-output/
+          if-no-files-found: error
+          retention-days: 14
