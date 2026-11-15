@@ -56,6 +56,8 @@ cmp -s config/gjej-release-v2.pub /etc/gjej/gjej-release-v2.pub && echo 'trusted
 
 Compare the public-key fingerprint with the owner-approved value before any bootstrap. These checks use only public key files; never copy a private key to the server. If the server does not already have Minisign >= 0.12 at `/usr/local/bin/minisign`, stop for a separately reviewed tooling installation. Do not alter `gjej-public` or other groups to make the bootstrap pass.
 
+The bootstrap itself is not yet signed by a separate offline tooling key. Its authenticity therefore depends on an administrator obtaining the exact reviewed commit from authenticated GitHub and reviewing the scripts before using `sudo`. The offline tooling-signing key remains a separate approved design item; it has not been generated or installed here.
+
 After an explicit server-side implementation approval, run from a reviewed checkout of this branch/main on the Gjej Droplet:
 
 ```bash
@@ -90,6 +92,16 @@ The server evidence supplied earlier showed `gjej` and `www-data` are members of
 Audit data is `/var/log/gjej-release-receiver.jsonl`, root-owned mode `0600`; the bootstrap installs daily log rotation for 400 rotations with mode-0600 root-owned files. Quarantine copies are under `/var/lib/gjej-release-receiver/quarantine/<submission-id>` mode `0700`; there is no automatic quarantine deletion. Include tool/config/key/audit state in approved off-host recovery planning; the application backup/restore gate remains separate.
 
 The administrator must independently run the candidate readiness checks from the production runbook. Passing candidate checks does not grant activation approval. This receiver never switches `/var/www/rezervogk/current`, runs migrations, or changes services. Activation and rollback remain separate root-controlled operations requiring their own explicit owner approval, approval-document verification, replay protection, and backup/restore evidence. If those mechanisms or the recovery gate are not ready, keep the candidate inactive.
+
+The receiver does not attach `.env` or `storage` automatically. If separately approved for candidate preparation, an administrator must add links to the existing Gjej-only paths on the Droplet (never any Lidhje path):
+
+```bash
+RELEASE=/var/www/rezervogk/releases/<release-id>
+sudo ln -s /etc/gjej/rezervogk.env "$RELEASE/.env"
+sudo ln -s /var/www/rezervogk/shared/storage "$RELEASE/storage"
+```
+
+That environment uses the existing Gjej production database and storage. Keep validation read-only; do not run migrations or checks that write application data. The release remains inactive and not publicly routed until the separate activation approval.
 
 ## Failure handling and recovery
 
