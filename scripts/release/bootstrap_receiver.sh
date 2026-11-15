@@ -11,6 +11,7 @@ SOURCE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 TOOLS_ROOT=/usr/local/lib/gjej-release-tools
 CONFIG=/etc/gjej/release-receiver.json
 TRUSTED_KEY=/etc/gjej/gjej-release-v2.pub
+LEGACY_TRUSTED_KEY=/etc/gjej-release/minisign.pub
 RECEIVER_STATE=/var/lib/gjej-release-receiver
 INCOMING=/var/lib/gjej-deploy/incoming
 
@@ -41,18 +42,39 @@ for path in /etc/gjej /usr/local/lib /usr/local/sbin /var/lib /var/www/rezervogk
   (( (8#$mode & 0022) == 0 )) || { echo "Required directory is group/other-writable: $path" >&2; exit 1; }
 done
 
-if [[ -e "$TRUSTED_KEY" || -L "$TRUSTED_KEY" ]]; then
-  [[ -f "$TRUSTED_KEY" && ! -L "$TRUSTED_KEY" && "$(stat -c '%u:%g:%a' "$TRUSTED_KEY")" == '0:0:644' ]] || {
-    echo 'Existing trusted key has an unsafe type, owner, or mode.' >&2
+if [[ -e "$LEGACY_TRUSTED_KEY" || -L "$LEGACY_TRUSTED_KEY" ]]; then
+  LEGACY_KEY_DIR="$(dirname "$LEGACY_TRUSTED_KEY")"
+  [[ -d "$LEGACY_KEY_DIR" && ! -L "$LEGACY_KEY_DIR" && "$(stat -c '%u' "$LEGACY_KEY_DIR")" == 0 ]] || {
+    echo 'Legacy trusted-key directory is not a protected real root-owned directory.' >&2
     exit 1
   }
-  cmp -s "$SOURCE_ROOT/config/gjej-release-v2.pub" "$TRUSTED_KEY" || {
-    echo 'Existing trusted key differs from the reviewed repository pin; stop for key-rotation review.' >&2
+  legacy_dir_mode="$(stat -c '%a' "$LEGACY_KEY_DIR")"
+  (( (8#$legacy_dir_mode & 0022) == 0 )) || {
+    echo 'Legacy trusted-key directory is group/other-writable.' >&2
     exit 1
   }
-else
-  install -o root -g root -m 0644 "$SOURCE_ROOT/config/gjej-release-v2.pub" "$TRUSTED_KEY"
+  [[ -f "$LEGACY_TRUSTED_KEY" && ! -L "$LEGACY_TRUSTED_KEY" && "$(stat -c '%u:%g:%a' "$LEGACY_TRUSTED_KEY")" == '0:0:644' ]] || {
+    echo 'Legacy trusted key has an unsafe type, owner, or mode; stop for manual review.' >&2
+    exit 1
+  }
+  cmp -s "$SOURCE_ROOT/config/gjej-release-v2.pub" "$LEGACY_TRUSTED_KEY" || {
+    echo 'Legacy trusted key differs from the repository v2 pin; an explicit key rotation is required. No trust key was changed.' >&2
+    exit 1
+  }
 fi
+
+[[ -e "$TRUSTED_KEY" || -L "$TRUSTED_KEY" ]] || {
+  echo 'Fixed receiver trust key is not preinstalled. Manually provision and verify the approved public key before bootstrap; this script never creates a trust root.' >&2
+  exit 1
+}
+[[ -f "$TRUSTED_KEY" && ! -L "$TRUSTED_KEY" && "$(stat -c '%u:%g:%a' "$TRUSTED_KEY")" == '0:0:644' ]] || {
+  echo 'Existing trusted key has an unsafe type, owner, or mode.' >&2
+  exit 1
+}
+cmp -s "$SOURCE_ROOT/config/gjej-release-v2.pub" "$TRUSTED_KEY" || {
+  echo 'Existing trusted key differs from the reviewed repository pin; stop for key-rotation review. No trust key was changed.' >&2
+  exit 1
+}
 
 [[ ! -L "$RECEIVER_STATE" ]] || { echo 'Receiver state path may not be a symlink.' >&2; exit 1; }
 mkdir -p "$RECEIVER_STATE"

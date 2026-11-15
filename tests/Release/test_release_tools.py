@@ -178,6 +178,19 @@ class GitSourceTests(unittest.TestCase):
         self.assertFalse((destination / "vendor").exists())
 
 
+class ReceiverBootstrapPolicyTests(unittest.TestCase):
+    def test_bootstrap_requires_a_preinstalled_pin_and_never_installs_one(self) -> None:
+        bootstrap = (ROOT / "scripts/release/bootstrap_receiver.sh").read_text(encoding="utf-8")
+        self.assertIn("TRUSTED_KEY=/etc/gjej/gjej-release-v2.pub", bootstrap)
+        self.assertIn("LEGACY_TRUSTED_KEY=/etc/gjej-release/minisign.pub", bootstrap)
+        self.assertIn("Fixed receiver trust key is not preinstalled", bootstrap)
+        self.assertIn("cmp -s \"$SOURCE_ROOT/config/gjej-release-v2.pub\" \"$TRUSTED_KEY\"", bootstrap)
+        self.assertNotIn(
+            'install -o root -g root -m 0644 "$SOURCE_ROOT/config/gjej-release-v2.pub" "$TRUSTED_KEY"',
+            bootstrap,
+        )
+
+
 class ArtifactValidationTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
