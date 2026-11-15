@@ -1,52 +1,31 @@
-name: Gjej Portier signed release build
+name: Gjej Portier signed release upload
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
-    inputs:
-      commit_sha:
-        description: Full commit SHA on main to build (manual rebuild only)
-        required: true
-        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: gjej-release-build-${{ github.ref }}
+  group: gjej-release-upload-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   build-release:
-    name: Build verified release candidate
-    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    name: Build and validate unsigned release
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     permissions:
       contents: read
     steps:
-      - name: Check out the selected source
+      - name: Check out the merged main commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.commit_sha || github.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-
-      - name: Require the selected commit to belong to main
-        shell: bash
-        env:
-          SELECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.commit_sha || github.sha }}
-        run: |
-          set -Eeuo pipefail
-          [[ "$SELECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'A full 40-character commit SHA is required.' >&2; exit 1; }
-          git cat-file -e "$SELECTED_SHA^{commit}"
-          git fetch --no-tags origin main
-          git merge-base --is-ancestor "$SELECTED_SHA" FETCH_HEAD || {
-            echo 'Selected commit is not reachable from origin/main.' >&2
-            exit 1
-          }
 
       - name: Set up PHP 8.4
         uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # 2.35.5
@@ -60,24 +39,244 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Build production release archive and manifest
+      - name: Install and authenticate Minisign 0.12
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y minisign
+          tool_dir="$RUNNER_TEMP/minisign-0.12"
+          mkdir -m 0700 "$tool_dir"
+          curl --fail --location --silent --show-error --retry 3 \
+            https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-linux.tar.gz \
+            --output "$tool_dir/minisign-0.12-linux.tar.gz"
+          curl --fail --location --silent --show-error --retry 3 \
+            https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-linux.tar.gz.minisig \
+            --output "$tool_dir/minisign-0.12-linux.tar.gz.minisig"
+          /usr/bin/minisign -Vm "$tool_dir/minisign-0.12-linux.tar.gz" \
+            -x "$tool_dir/minisign-0.12-linux.tar.gz.minisig" \
+            -P RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3
+          tar -xzf "$tool_dir/minisign-0.12-linux.tar.gz" -C "$tool_dir" minisign-linux/x86_64/minisign
+          "$tool_dir/minisign-linux/x86_64/minisign" -v
+          echo "$tool_dir/minisign-linux/x86_64" >> "$GITHUB_PATH"
+
+      - name: Build and validate the production release
         shell: bash
         env:
           PYTHONDONTWRITEBYTECODE: '1'
-          SELECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.commit_sha || github.sha }}
+          SELECTED_SHA: ${{ github.sha }}
           OUTPUT_DIR: ${{ runner.temp }}/gjej-release-output
         run: |
           set -Eeuo pipefail
           mkdir -m 0700 "$OUTPUT_DIR"
-          python3 -m scripts.release.package_release \
-            --ref "$SELECTED_SHA" \
-            --output-dir "$OUTPUT_DIR"
+          python3 -m scripts.release.package_release --ref "$SELECTED_SHA" --output-dir "$OUTPUT_DIR"
           python3 -m unittest discover -s tests/Release -p 'test_release_tools.py' -v
 
-      - name: Publish unsigned candidate for offline signing
+      - name: Transfer unsigned build output to the isolated signing job
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v4.4.3
         with:
-          name: gjej-release-${{ github.event_name == 'workflow_dispatch' && inputs.commit_sha || github.sha }}
+          name: gjej-unsigned-release-${{ github.sha }}
+          path: ${{ runner.temp }}/gjej-release-output/
+          if-no-files-found: error
+          retention-days: 1
+
+  sign-and-upload:
+    name: Sign and upload inactive candidate
+    needs: build-release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the exact merged main commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Download unsigned release output
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: gjej-unsigned-release-${{ github.sha }}
+          path: ${{ runner.temp }}/gjej-release-output
+
+      - name: Install and authenticate Minisign 0.12
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y minisign
+          tool_dir="$RUNNER_TEMP/minisign-0.12"
+          mkdir -m 0700 "$tool_dir"
+          curl --fail --location --silent --show-error --retry 3 \
+            https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-linux.tar.gz \
+            --output "$tool_dir/minisign-0.12-linux.tar.gz"
+          curl --fail --location --silent --show-error --retry 3 \
+            https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-linux.tar.gz.minisig \
+            --output "$tool_dir/minisign-0.12-linux.tar.gz.minisig"
+          /usr/bin/minisign -Vm "$tool_dir/minisign-0.12-linux.tar.gz" \
+            -x "$tool_dir/minisign-0.12-linux.tar.gz.minisig" \
+            -P RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3
+          tar -xzf "$tool_dir/minisign-0.12-linux.tar.gz" -C "$tool_dir" minisign-linux/x86_64/minisign
+          "$tool_dir/minisign-linux/x86_64/minisign" -v
+          echo "$tool_dir/minisign-linux/x86_64" >> "$GITHUB_PATH"
+
+      - name: Sign and verify release manifest
+        shell: bash
+        env:
+          GJEJ_RELEASE_SIGNING_KEY: ${{ secrets.GJEJ_RELEASE_SIGNING_KEY }}
+          OUTPUT_DIR: ${{ runner.temp }}/gjej-release-output
+          CREDENTIAL_DIR: ${{ runner.temp }}/gjej-signing-credentials
+          SELECTED_SHA: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          mkdir -m 0700 "$CREDENTIAL_DIR"
+          cleanup() { rm -rf -- "$CREDENTIAL_DIR"; }
+          trap cleanup EXIT
+
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          secret = os.environ.get("GJEJ_RELEASE_SIGNING_KEY", "")
+          try:
+              bundle = json.loads(secret)
+          except (json.JSONDecodeError, TypeError):
+              raise SystemExit("GJEJ_RELEASE_SIGNING_KEY must be a JSON key bundle; see docs/github-signed-release.md.")
+          if not isinstance(bundle, dict) or set(bundle) != {"private_key", "passphrase"}:
+              raise SystemExit("Signing key bundle format is invalid.")
+          if not isinstance(bundle["private_key"], str) or not isinstance(bundle["passphrase"], str):
+              raise SystemExit("Signing key bundle fields must be text.")
+          if not bundle["private_key"] or not bundle["passphrase"]:
+              raise SystemExit("Signing key bundle is incomplete.")
+          root = Path(os.environ["CREDENTIAL_DIR"])
+          for name, value in (("minisign.key", bundle["private_key"]), ("minisign.passphrase", bundle["passphrase"])):
+              fd = os.open(root / name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+              with os.fdopen(fd, "wb") as output:
+                  output.write(value.encode("utf-8"))
+                  output.write(b"\n")
+          del bundle, secret
+          PY
+          unset GJEJ_RELEASE_SIGNING_KEY
+
+          archive_count=0
+          for archive in "$OUTPUT_DIR"/gjej-*.tar.gz; do
+            [[ -f "$archive" && ! -L "$archive" ]] || continue
+            ((archive_count += 1))
+          done
+          [[ "$archive_count" == 1 ]] || { echo 'Expected exactly one release archive.' >&2; exit 1; }
+          archive="$(find "$OUTPUT_DIR" -maxdepth 1 -type f -name 'gjej-*.tar.gz' -print -quit)"
+          manifest="$archive.manifest.json"
+          signature="$manifest.minisig"
+          [[ -f "$manifest" && ! -L "$manifest" ]] || { echo 'Release manifest is missing.' >&2; exit 1; }
+          [[ ! -e "$signature" && ! -L "$signature" ]] || { echo 'Refusing to overwrite a signature.' >&2; exit 1; }
+          expected_name="gjej-${SELECTED_SHA:0:12}-"
+          [[ "$(basename "$archive")" == "$expected_name"* ]] || { echo 'Release archive commit prefix does not match selected source.' >&2; exit 1; }
+
+          python3 -m scripts.release.sign_artifact sign \
+            --archive "$archive" \
+            --manifest "$manifest" \
+            --private-key "$CREDENTIAL_DIR/minisign.key" \
+            --passphrase-file "$CREDENTIAL_DIR/minisign.passphrase" \
+            --signer-identity gjej-production-release \
+            --signature "$signature"
+          python3 -m scripts.release.sign_artifact verify \
+            --archive "$archive" \
+            --manifest "$manifest" \
+            --signature "$signature" \
+            --trusted-public-key config/gjej-release-v2.pub \
+            --expected-identity gjej-production-release
+
+      - name: Upload signed bundle through restricted SFTP
+        shell: bash
+        env:
+          GJEJ_DEPLOY_SSH_KEY: ${{ secrets.GJEJ_DEPLOY_SSH_KEY }}
+          GJEJ_DEPLOY_HOST: ${{ vars.GJEJ_DEPLOY_HOST }}
+          GJEJ_DEPLOY_KNOWN_HOSTS: ${{ vars.GJEJ_DEPLOY_KNOWN_HOSTS }}
+          OUTPUT_DIR: ${{ runner.temp }}/gjej-release-output
+          CREDENTIAL_DIR: ${{ runner.temp }}/gjej-deploy-credentials
+          SUBMISSION_ID: run-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          mkdir -m 0700 "$CREDENTIAL_DIR"
+          cleanup() { rm -rf -- "$CREDENTIAL_DIR"; }
+          trap cleanup EXIT
+
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+
+          key = os.environ.get("GJEJ_DEPLOY_SSH_KEY", "")
+          host = os.environ.get("GJEJ_DEPLOY_HOST", "")
+          known_hosts = os.environ.get("GJEJ_DEPLOY_KNOWN_HOSTS", "")
+          if not key or not host or not known_hosts:
+              raise SystemExit("Required restricted SFTP key or pinned host configuration is missing.")
+          if not re.fullmatch(r"[A-Za-z0-9.-]+", host):
+              raise SystemExit("Configured SFTP host is malformed.")
+          key_lines = [line for line in known_hosts.splitlines() if line and not line.startswith("#")]
+          if len(key_lines) != 1:
+              raise SystemExit("GJEJ_DEPLOY_KNOWN_HOSTS must contain exactly one pinned host-key line.")
+          root = Path(os.environ["CREDENTIAL_DIR"])
+          for name, content in (("deploy_key", key), ("known_hosts", known_hosts)):
+              fd = os.open(root / name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+              with os.fdopen(fd, "wb") as output:
+                  output.write(content.encode("utf-8"))
+                  if not content.endswith("\n"):
+                      output.write(b"\n")
+          PY
+          unset GJEJ_DEPLOY_SSH_KEY GJEJ_DEPLOY_KNOWN_HOSTS
+
+          ssh-keygen -F "$GJEJ_DEPLOY_HOST" -f "$CREDENTIAL_DIR/known_hosts" >/dev/null || {
+            echo 'Pinned known_hosts does not contain the configured deployment host.' >&2
+            exit 1
+          }
+          submission="$SUBMISSION_ID"
+          [[ "$submission" =~ ^run-[0-9]{1,20}-[0-9]{1,6}$ ]] || { echo 'Generated submission ID is malformed.' >&2; exit 1; }
+          archive_count=0
+          for archive in "$OUTPUT_DIR"/gjej-*.tar.gz; do
+            [[ -f "$archive" && ! -L "$archive" ]] || continue
+            ((archive_count += 1))
+          done
+          [[ "$archive_count" == 1 ]] || { echo 'Expected exactly one release archive.' >&2; exit 1; }
+          archive="$(find "$OUTPUT_DIR" -maxdepth 1 -type f -name 'gjej-*.tar.gz' -print -quit)"
+          manifest="$archive.manifest.json"
+          signature="$manifest.minisig"
+          [[ -f "$manifest" && ! -L "$manifest" && -f "$signature" && ! -L "$signature" ]] || {
+            echo 'Signed release manifest or signature is missing.' >&2
+            exit 1
+          }
+          archive_name="$(basename "$archive")"
+          manifest_name="$(basename "$manifest")"
+          signature_name="$(basename "$signature")"
+          batch="$CREDENTIAL_DIR/sftp.batch"
+          {
+            printf 'mkdir /incoming/%s\n' "$submission"
+            printf 'cd /incoming/%s\n' "$submission"
+            printf 'put %s %s.part\n' "$archive" "$archive_name"
+            printf 'rename %s.part %s\n' "$archive_name" "$archive_name"
+            printf 'put %s %s.part\n' "$manifest" "$manifest_name"
+            printf 'rename %s.part %s\n' "$manifest_name" "$manifest_name"
+            printf 'put %s %s.part\n' "$signature" "$signature_name"
+            printf 'rename %s.part %s\n' "$signature_name" "$signature_name"
+          } > "$batch"
+          chmod 0600 "$batch"
+          sftp -b "$batch" \
+            -i "$CREDENTIAL_DIR/deploy_key" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$CREDENTIAL_DIR/known_hosts" \
+            -o GlobalKnownHostsFile=/dev/null \
+            -o ForwardAgent=no \
+            "gjej-deploy@$GJEJ_DEPLOY_HOST"
+          echo "Signed release uploaded to restricted SFTP submission $SUBMISSION_ID. It was not installed or activated."
+
+      - name: Publish signed release artifact for audit and recovery
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v4.4.3
+        with:
+          name: gjej-signed-release-${{ github.sha }}
           path: ${{ runner.temp }}/gjej-release-output/
           if-no-files-found: error
           retention-days: 14

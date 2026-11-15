@@ -18,6 +18,7 @@ from scripts.release import install_release as installer
 from scripts.release.package_release import PROJECT_DIRS, ROOT_FILES, copy_committed_project, reject_lfs_pointers, reject_submodules
 from scripts.release.sign_artifact import sign_artifact, verify_signed_artifact
 from scripts.release.install_release import install_signed_release
+from scripts.release import receive_release as receiver
 from scripts.release.validate_artifact import REQUIRED_FILES, validate_archive
 
 
@@ -689,6 +690,160 @@ class SyntheticPackagePipelineTests(unittest.TestCase):
             with self.assertRaises(subprocess.CalledProcessError):
                 packager.package("synthetic-release", self.output)
         self.assertEqual(list(self.output.iterdir()), [])
+
+
+class RestrictedReceiverTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        os.chmod(self.root, 0o700)
+        self.incoming_parent = self.root / "var-lib"
+        self.incoming_parent.mkdir(mode=0o700)
+        self.incoming = self.incoming_parent / "incoming"
+        self.incoming.mkdir(mode=0o700)
+        self.quarantine = self.root / "quarantine"
+        self.quarantine.mkdir(mode=0o700)
+        self.releases = self.root / "releases"
+        self.releases.mkdir(mode=0o700)
+        self.trusted_key = self.root / "trusted.pub"
+        self.trusted_key.write_text("synthetic public key\n", encoding="ascii")
+        self.trusted_key.chmod(0o600)
+        self.audit = self.root / "receiver.jsonl"
+        self.settings = receiver.ReceiverSettings(
+            incoming_root=self.incoming,
+            quarantine_root=self.quarantine,
+            releases_root=self.releases,
+            trusted_public_key=self.trusted_key,
+            expected_identity="gjej-production-release",
+            uploader_uid=os.getuid(),
+            owner_uid=os.getuid(),
+            group_gid=os.getgid(),
+        )
+        self.submission_id = "run-123456-1"
+        self.release_id = "0123456789ab-20261107T120000Z"
+        self.upload = self.incoming / self.submission_id
+        self.upload.mkdir(mode=0o700)
+        self.archive_name = f"gjej-{self.release_id}.tar.gz"
+        for name, contents in (
+            (self.archive_name, b"synthetic archive"),
+            (self.archive_name + ".manifest.json", b"synthetic manifest"),
+            (self.archive_name + ".manifest.json.minisig", b"synthetic signature"),
+        ):
+            path = self.upload / name
+            path.write_bytes(contents)
+            path.chmod(0o600)
+        self.verified = {
+            "status": "verified", "release_id": self.release_id,
+            "commit_sha": "0123456789ab" + "1" * 28, "sha256": "a" * 64,
+        }
+        self.candidate = self.releases.resolve() / self.release_id
+        (self.candidate / "bootstrap").mkdir(parents=True, mode=0o700)
+        self.installed = {
+            "status": "installed-inactive", "activated": False,
+            "release_id": self.release_id, "commit_sha": self.verified["commit_sha"],
+            "sha256": self.verified["sha256"], "path": str(self.candidate),
+        }
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def receive(self, *, verify=None, install=None):
+        return receiver.receive_submission(
+            self.submission_id,
+            self.settings,
+            audit_path=self.audit,
+            verify=verify or (lambda *args: self.verified),
+            install=install or (lambda *args, **kwargs: self.installed),
+            require_root=False,
+        )
+
+    def test_only_exact_signed_bundle_is_sealed_and_installed_inactive(self) -> None:
+        calls = []
+        result = self.receive(install=lambda *args, **kwargs: (calls.append((args, kwargs)) or self.installed))
+        self.assertEqual(result["status"], "installed-inactive")
+        self.assertFalse(result["activated"])
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][1]["owner_uid"], os.getuid())
+        self.assertEqual(calls[0][1]["group_gid"], os.getgid())
+        runtime_cache = self.candidate / "bootstrap/cache"
+        self.assertTrue(runtime_cache.is_dir())
+        self.assertEqual(runtime_cache.stat().st_mode & 0o777, 0o750)
+        self.assertEqual(runtime_cache.stat().st_uid, os.getuid())
+        sealed = self.quarantine / self.submission_id
+        self.assertEqual({path.name for path in sealed.iterdir()}, {
+            self.archive_name,
+            self.archive_name + ".manifest.json",
+            self.archive_name + ".manifest.json.minisig",
+        })
+        self.assertTrue(all(path.stat().st_mode & 0o777 == 0o600 for path in sealed.iterdir()))
+        events = [json.loads(line)["event"] for line in self.audit.read_text().splitlines()]
+        self.assertEqual(events, ["snapshot-started", "signature-verified", "install-started", "installed-inactive"])
+
+    def test_partial_or_unexpected_upload_is_rejected(self) -> None:
+        (self.upload / "archive.tar.gz.part").write_text("partial", encoding="ascii")
+        verify = unittest.mock.Mock()
+        with self.assertRaisesRegex(ReleaseError, "only the archive|too many entries"):
+            self.receive(verify=verify)
+        verify.assert_not_called()
+
+    def test_duplicate_submission_is_rejected_without_second_install(self) -> None:
+        self.receive()
+        install = unittest.mock.Mock()
+        with self.assertRaisesRegex(ReleaseError, "already received"):
+            self.receive(install=install)
+        install.assert_not_called()
+
+    def test_bad_signature_never_calls_inactive_installer_and_retains_quarantine(self) -> None:
+        install = unittest.mock.Mock()
+
+        def reject_signature(*_args):
+            raise ReleaseError("synthetic signature rejection")
+
+        with self.assertRaisesRegex(ReleaseError, "synthetic signature rejection"):
+            self.receive(verify=reject_signature, install=install)
+        install.assert_not_called()
+        self.assertTrue((self.quarantine / self.submission_id / self.archive_name).is_file())
+        self.assertEqual(json.loads(self.audit.read_text().splitlines()[-1])["event"], "failed")
+
+    def test_invalid_submission_id_is_rejected_before_filesystem_access(self) -> None:
+        with self.assertRaisesRegex(ReleaseError, "format is invalid"):
+            receiver.receive_submission(
+                "../etc", self.settings, audit_path=self.audit, require_root=False,
+            )
+
+
+class SigningPtyTests(unittest.TestCase):
+    def test_minisign_passphrase_is_sent_through_pty_without_becoming_output(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            fake = Path(directory) / "fake-minisign"
+            fake.write_text(
+                "#!/usr/bin/env python3\n"
+                "import sys\n"
+                "sys.stderr.write('Password: ')\n"
+                "sys.stderr.flush()\n"
+                "value = sys.stdin.readline().rstrip('\\r\\n')\n"
+                "raise SystemExit(0 if value == 'correct horse battery staple' else 1)\n",
+                encoding="utf-8",
+            )
+            fake.chmod(0o700)
+            from scripts.release.sign_artifact import _run_minisign_with_passphrase
+
+            self.assertEqual(
+                _run_minisign_with_passphrase(str(fake), ["-S"], b"correct horse battery staple"),
+                0,
+            )
+
+    def test_private_passphrase_file_requires_restricted_permissions(self) -> None:
+        from scripts.release.sign_artifact import _read_private_passphrase
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "passphrase"
+            path.write_text("one-line-secret\n", encoding="utf-8")
+            path.chmod(0o600)
+            self.assertEqual(_read_private_passphrase(path), b"one-line-secret")
+            path.chmod(0o644)
+            with self.assertRaisesRegex(ReleaseError, "private and bounded"):
+                _read_private_passphrase(path)
 
 
 if __name__ == "__main__":

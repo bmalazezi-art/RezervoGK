@@ -8,11 +8,15 @@ import base64
 import hashlib
 import json
 import os
+import pty
 import re
+import selectors
 import shutil
 import stat
 import subprocess
+import termios
 import tempfile
+import time
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -106,6 +110,98 @@ def _run_minisign(
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise ReleaseError("Minisign operation failed or timed out.") from exc
     return result
+
+
+def _read_private_passphrase(path: Path) -> bytes:
+    path = regular_file(path, "Minisign passphrase file")
+    details = path.stat()
+    if details.st_mode & 0o077 or details.st_size > 4096:
+        raise ReleaseError("Minisign passphrase file must be private and bounded.")
+    try:
+        value = path.read_bytes().rstrip(b"\r\n")
+    except OSError as exc:
+        raise ReleaseError("Minisign passphrase file is unreadable.") from exc
+    if not value or b"\x00" in value or b"\n" in value or b"\r" in value:
+        raise ReleaseError("Minisign passphrase file must contain one non-empty line.")
+    return value
+
+
+def _run_minisign_with_passphrase(executable: str, args: list[str], passphrase: bytes) -> int:
+    """Run Minisign with a hidden passphrase over a private pseudo-terminal.
+
+    Minisign deliberately reads encrypted-key passwords from a controlling
+    terminal. This keeps that key protection usable in CI without putting the
+    passphrase in argv, stdin logs, or an inherited environment variable.
+    Output is captured and discarded; callers only receive the exit status.
+    """
+    master_fd = slave_fd = -1
+    process: subprocess.Popen[bytes] | None = None
+    try:
+        master_fd, slave_fd = pty.openpty()
+        attributes = termios.tcgetattr(slave_fd)
+        attributes[3] &= ~termios.ECHO
+        termios.tcsetattr(slave_fd, termios.TCSANOW, attributes)
+        process = subprocess.Popen(
+            [executable, *args], stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
+            close_fds=True, start_new_session=True,
+        )
+        os.close(slave_fd)
+        slave_fd = -1
+        os.set_blocking(master_fd, False)
+        selector = selectors.DefaultSelector()
+        selector.register(master_fd, selectors.EVENT_READ)
+        output = bytearray()
+        passphrase_sent = False
+        deadline = time.monotonic() + 60
+        prompt = re.compile(rb"(?i)(?:password|passphrase)[^\r\n]{0,120}:")
+        while time.monotonic() < deadline:
+            if process.poll() is not None:
+                # Drain any final output. Its content is intentionally never
+                # included in exceptions or logs.
+                events = selector.select(timeout=0.1)
+                if not events:
+                    break
+            else:
+                events = selector.select(timeout=0.1)
+            for _, _ in events:
+                try:
+                    block = os.read(master_fd, 4096)
+                except OSError:
+                    block = b""
+                if not block:
+                    continue
+                output.extend(block)
+                if len(output) > 65536:
+                    raise ReleaseError("Minisign produced excessive output.")
+                if not passphrase_sent and prompt.search(output):
+                    os.write(master_fd, passphrase + b"\n")
+                    passphrase_sent = True
+            if process.poll() is not None:
+                # A prompt may be buffered just before exit; one final scan is
+                # harmless, but never send credentials after the process exits.
+                break
+        else:
+            raise ReleaseError("Minisign signing timed out.")
+        returncode = process.wait(timeout=2)
+        if returncode == 0 and not passphrase_sent:
+            # This is acceptable for an unencrypted key; no prompt is expected.
+            return 0
+        return returncode
+    except (OSError, subprocess.TimeoutExpired, selectors.SelectorError) as exc:
+        if process is not None and process.poll() is None:
+            process.kill()
+            process.wait()
+        raise ReleaseError("Minisign signing failed or timed out.") from exc
+    except ReleaseError:
+        if process is not None and process.poll() is None:
+            process.kill()
+            process.wait()
+        raise
+    finally:
+        if slave_fd >= 0:
+            os.close(slave_fd)
+        if master_fd >= 0:
+            os.close(master_fd)
 
 
 def _manifest_bytes(path: Path) -> bytes:
@@ -203,6 +299,7 @@ def sign_artifact(
     private_key_path: Path,
     signer_identity: str,
     signature_path: Path,
+    passphrase_path: Path | None = None,
 ) -> Path:
     executable = _minisign_executable()
     archive_path = regular_file(archive_path, "Release archive")
@@ -210,6 +307,7 @@ def sign_artifact(
     private_key_path = regular_file(private_key_path, "Minisign private key")
     if private_key_path.stat().st_mode & 0o077:
         raise ReleaseError("Minisign private key permissions must exclude group and other access.")
+    passphrase = _read_private_passphrase(passphrase_path) if passphrase_path is not None else None
     identity = _identity(signer_identity)
 
     # Only sign a structurally validated release; no archive is unpacked here.
@@ -223,11 +321,16 @@ def sign_artifact(
     try:
         with tempfile.TemporaryDirectory(prefix="gjej-minisign-", dir=signature_path.parent) as temp_name:
             temporary_signature = Path(temp_name) / "release.manifest.minisig"
-            result = _run_minisign(executable, [
+            signing_args = [
                 "-S", "-s", str(private_key_path), "-m", str(manifest_path),
                 "-x", str(temporary_signature), "-t", comment,
-            ], interactive=True)
-            if result.returncode != 0:
+            ]
+            if passphrase is None:
+                result = _run_minisign(executable, signing_args, interactive=True)
+                return_code = result.returncode
+            else:
+                return_code = _run_minisign_with_passphrase(executable, signing_args, passphrase)
+            if return_code != 0:
                 raise ReleaseError("Minisign failed to sign the release manifest (check the protected key and signing environment).")
             regular_file(temporary_signature, "Generated Minisign signature")
             try:
@@ -302,6 +405,7 @@ def main() -> int:
     sign.add_argument("--archive", required=True, type=Path)
     sign.add_argument("--manifest", required=True, type=Path)
     sign.add_argument("--private-key", required=True, type=Path)
+    sign.add_argument("--passphrase-file", type=Path, help="Private, one-line Minisign passphrase file for non-interactive signing")
     sign.add_argument("--signer-identity", required=True)
     sign.add_argument("--signature", required=True, type=Path)
 
@@ -315,7 +419,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         if args.command == "sign":
-            signature = sign_artifact(args.archive, args.manifest, args.private_key, args.signer_identity, args.signature)
+            signature = sign_artifact(args.archive, args.manifest, args.private_key, args.signer_identity, args.signature, args.passphrase_file)
             output: dict[str, Any] = {"signature": str(signature), "status": "signed"}
         else:
             output = verify_signed_artifact(args.archive, args.manifest, args.signature, args.trusted_public_key, args.expected_identity)

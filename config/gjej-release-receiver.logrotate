@@ -1,0 +1,9 @@
+/var/log/gjej-release-receiver.jsonl {
+    daily
+    rotate 400
+    missingok
+    notifempty
+    compress
+    delaycompress
+    create 0600 root root
+}
