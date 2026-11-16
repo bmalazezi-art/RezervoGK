@@ -11,6 +11,7 @@ use App\Support\AvailabilityCalendar;
 use App\Support\GoalkeeperPricing;
 use App\Support\ProfileAnalytics;
 use App\Support\ProfilePhoto;
+use App\Support\SearchDemand;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -22,7 +23,7 @@ class GoalkeeperController extends Controller
 {
     public const PER_PAGE = 8;
 
-    public function index(Request $request): Response
+    public function index(Request $request, SearchDemand $demand): Response
     {
         $filters = $request->validate([
             'city_id' => ['nullable', 'integer', Rule::exists('cities', 'id')],
@@ -53,7 +54,10 @@ class GoalkeeperController extends Controller
         }
 
         $date = $filters['date'] ?? null;
-        $page = $query->orderBy('id')->paginate(self::PER_PAGE)->withQueryString();
+        $page = $query->orderByDesc('is_featured')->orderBy('id')->paginate(self::PER_PAGE)->withQueryString();
+        $demandCity = isset($cityId) && $cityId ? (int) $cityId : null;
+        $demandCountry = isset($countryId) && $countryId ? (int) $countryId : ($demandCity ? City::whereKey($demandCity)->value('country_id') : null);
+        $demand->record($request, $demandCountry, $demandCity, $format ?? null, $page->total());
 
         return Inertia::render('Browse', [
             'keepers' => GoalkeeperProfileResource::collection($page->getCollection())->resolve(),

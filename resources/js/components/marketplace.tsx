@@ -132,7 +132,7 @@ export function KeeperCard({ keeper, onOpen, requestedDate }: { keeper: Keeper; 
       <button className="heart" aria-label={t("Ruaje")} onClick={(e) => e.stopPropagation()}><Icon name="heart" size={19} /></button>
     </div>
     <div className="keeper-info">
-      <div className="card-top"><div><h3>{keeper.name}</h3><p><Icon name="pin" size={15} /> {keeperLocation(keeper)}</p></div><strong>{formatKeeperPrice(keeper)}<small>{t("/ndeshje")}</small></strong></div>
+      <div className="card-top"><div><h3>{keeper.name}{keeper.verifiedByAdmin && <> <span className="verified-badge" title={t("Profili u verifikua nga Gjej portier")}>✓ {t("I verifikuar")}</span></>}</h3><p><Icon name="pin" size={15} /> {keeperLocation(keeper)}</p></div><strong>{formatKeeperPrice(keeper)}<small>{t("/ndeshje")}</small></strong></div>
       <div className="card-meta"><span>{t("Formatet e lojës")}</span><span>{keeper.formats.join(" · ")}</span></div>
       <ContactActions keeper={keeper} compact />
     </div>

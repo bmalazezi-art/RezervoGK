@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AdminListingAudit;
 use App\Models\City;
 use App\Models\Country;
-use App\Models\AdminListingAudit;
 use App\Models\GoalkeeperProfile;
-use App\Models\User;
+use App\Support\GoalkeeperListingModeration;
 use App\Support\ProfilePhoto;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
-use App\Support\GoalkeeperListingModeration;
 
 class AdminGoalkeepersController extends Controller
 {
@@ -97,6 +97,7 @@ class AdminGoalkeepersController extends Controller
                 'user' => $profile->user ? ['id' => $profile->user->id, 'name' => $profile->user->name, 'email' => $profile->user->email, 'isSuspended' => $profile->user->is_suspended] : null,
                 'isPublished' => $profile->is_published, 'isSuspended' => $profile->is_suspended,
                 'adminHidden' => $profile->admin_hidden, 'isPubliclyVisible' => $publiclyVisible,
+                'isFeatured' => (bool) $profile->is_featured, 'isVerified' => $profile->verified_at !== null,
                 'createdAt' => $profile->created_at->toIso8601String(), 'updatedAt' => $profile->updated_at->toIso8601String(),
                 'weeklyHours' => $profile->weeklyHours->map(fn ($hour) => ['weekday' => $hour->weekday, 'start' => substr($hour->start_time, 0, 5), 'end' => substr($hour->end_time, 0, 5)]),
                 'upcomingAvailabilities' => $profile->upcomingAvailabilities->take(30)->map(fn ($row) => $row->available_on->toDateString())->values(),
@@ -117,5 +118,39 @@ class AdminGoalkeepersController extends Controller
         $moderation->setHidden($profile, $request->user(), (bool) $data['hidden'], $data['reason']);
 
         return back()->with('status', $data['hidden'] ? __('Listimi u fsheh.') : __('Listimi u rikthye.'));
+    }
+
+    public function highlight(Request $request, GoalkeeperProfile $profile)
+    {
+        $data = $request->validate([
+            'field' => ['required', Rule::in(['featured', 'verified'])],
+            'value' => ['required', 'boolean'],
+            'reason' => ['required', 'string', 'min:10', 'max:500'],
+        ]);
+        $on = (bool) $data['value'];
+
+        DB::transaction(function () use ($request, $profile, $data, $on) {
+            $locked = GoalkeeperProfile::whereKey($profile->id)->lockForUpdate()->firstOrFail();
+            if ($data['field'] === 'featured') {
+                if ((bool) $locked->is_featured === $on) {
+                    return;
+                }
+                $locked->forceFill(['is_featured' => $on])->save();
+            } else {
+                if (($locked->verified_at !== null) === $on) {
+                    return;
+                }
+                $locked->forceFill(['verified_at' => $on ? now() : null])->save();
+            }
+            AdminListingAudit::create([
+                'goalkeeper_profile_id' => $locked->id,
+                'actor_id' => $request->user()->id,
+                'action' => ($on ? '' : 'un').$data['field'],
+                'reason' => trim($data['reason']),
+                'created_at' => now(),
+            ]);
+        });
+
+        return back()->with('status', __('Profili u përditësua.'));
     }
 }

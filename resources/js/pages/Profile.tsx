@@ -79,7 +79,7 @@ export default function Profile({ keeper, calendar, selectedDate, today, maxDate
     <section className="section profile-hero">
       <div className="profile-image"><img src={keeper.photo} alt={keeper.name} /></div>
       <div className="profile-copy">
-        <div className="profile-title"><div><span className="available-text"><i /> {keeperAvailability(keeper)}</span><h1>{keeper.name}</h1><p><Icon name="pin" size={18} /> {keeperLocation(keeper)}</p></div><button className="round-heart"><Icon name="heart" /></button></div>
+        <div className="profile-title"><div><span className="available-text"><i /> {keeperAvailability(keeper)}</span><h1>{keeper.name}</h1>{keeper.verifiedByAdmin && <span className="verified-badge" title={t("Profili u verifikua nga Gjej portier")}>✓ {t("I verifikuar")}</span>}<p><Icon name="pin" size={18} /> {keeperLocation(keeper)}</p></div><button className="round-heart"><Icon name="heart" /></button></div>
         <div className="profile-stats">{keeper.experienceYears > 0 && <div><strong>{keeper.experienceYears} {t(keeper.experienceYears === 1 ? "vit" : "vite")}</strong><span>{t("Përvojë e deklaruar")}</span></div>}<div><strong>{keeper.formats.join(" · ")}</strong><span>{t("Formatet e lojës")}</span></div></div>
         <div className="profile-sharing">
           <div className="profile-share-dropdown" onKeyDown={closeShareMenu}>

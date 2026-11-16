@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminAnalyticsController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminGoalkeeperReportController;
 use App\Http\Controllers\AdminGoalkeepersController;
+use App\Http\Controllers\AdminInsightsController;
 use App\Http\Controllers\AdminPaymentController;
 use App\Http\Controllers\AdminSystemController;
 use App\Http\Controllers\AdminUsersController;
@@ -78,6 +79,8 @@ Route::middleware(['auth', 'auth.session', EnsureAccountIsActive::class, 'cache.
         Route::patch('/users/{user}/suspension', [AdminUsersController::class, 'updateSuspension'])->whereNumber('user')->middleware('throttle:20,1')->name('admin.users.suspension');
         Route::get('/goalkeepers', [AdminGoalkeepersController::class, 'index'])->name('admin.goalkeepers');
         Route::get('/goalkeepers/{profile}', [AdminGoalkeepersController::class, 'show'])->whereNumber('profile')->name('admin.goalkeepers.show');
+        Route::patch('/goalkeepers/{profile}/highlight', [AdminGoalkeepersController::class, 'highlight'])->whereNumber('profile')->middleware('throttle:30,1')->name('admin.goalkeepers.highlight');
+        Route::get('/insights', AdminInsightsController::class)->name('admin.insights');
         Route::patch('/goalkeepers/{profile}/moderation', [AdminGoalkeepersController::class, 'moderate'])->whereNumber('profile')->middleware('throttle:20,1')->name('admin.goalkeepers.moderate');
         Route::get('/reports', [AdminGoalkeeperReportController::class, 'index'])->name('admin.reports');
         Route::get('/reports/{report}', [AdminGoalkeeperReportController::class, 'show'])->whereNumber('report')->name('admin.reports.show');

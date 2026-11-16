@@ -19,7 +19,7 @@ export default function MarketplaceLayout({ children }: { children: ReactNode })
     {inertia.props.auth.canReviewReports && <nav className="section admin-sidebar" aria-label={t("Administrimi")}>
       <Link href="/admin">{t("Përmbledhja")}</Link><Link href="/admin/users">{t("Përdoruesit")}</Link>
       <Link href="/admin/goalkeepers">{t("Listimet e portierëve")}</Link><Link href="/admin/moderation">{t("Qendra e moderimit")}</Link>
-      <Link href="/admin/analytics">{t("Analitika")}</Link>
+      <Link href="/admin/analytics">{t("Analitika")}</Link><Link href="/admin/insights">{t("Kërkesa dhe kontaktet")}</Link>
       {inertia.props.auth.canManageSystem && <Link href="/admin/settings">{t("Administrimi i sistemit")}</Link>}
     </nav>}
     {!!inertia.props.platformAnnouncement && <aside className="section platform-announcement" role="status">{inertia.props.platformAnnouncement}</aside>}

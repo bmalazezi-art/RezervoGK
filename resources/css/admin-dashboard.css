@@ -152,3 +152,12 @@
 @media (max-width: 1050px) { .admin-overview-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 760px) { .admin-overview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .admin-overview-metric { min-height: 78px; padding: 11px; } .admin-overview-metric strong { font-size: 20px; } }
 @media (max-width: 380px) { .admin-overview-metrics { grid-template-columns: 1fr; } .admin-overview-metric { min-height: 64px; flex-direction: row; align-items: center; } }
+
+/* Demand & contacts insights */
+.admin-insights { display: grid; gap: 16px; }
+.admin-insights .admin-stat small { color: var(--muted); font-size: 12px; }
+.admin-insights-period { display: flex; flex-direction: column; gap: 6px; font-size: 11px; font-weight: 700; }
+.admin-insights-period select { min-width: 180px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: white; }
+.admin-insights tr.is-gap td:nth-child(3) { color: #a3361f; font-weight: 700; }
+.admin-muted-link { color: var(--muted); text-decoration: none; margin-left: 4px; }
+.admin-highlight-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }

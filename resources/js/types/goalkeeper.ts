@@ -5,6 +5,7 @@ export interface Keeper {
   id: number;
   slug?: string;
   url?: string;
+  verifiedByAdmin?: boolean;
   name: string;
   city: string;
   cityName?: string;
