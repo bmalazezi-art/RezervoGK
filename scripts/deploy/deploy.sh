@@ -93,5 +93,9 @@ trap - ERR
 status="$(curl -s -o /dev/null -w '%{http_code}' "$SITE/up" || true)"
 echo
 echo "Deployed $(as_owner git rev-parse --short HEAD). Health check: $status"
-echo "Roll back with: sudo deploy-gjej $previous"
+if [[ "$live" == "$(readlink -f "$APP")" ]]; then
+  echo "Roll back with: sudo deploy-gjej $previous"
+else
+  echo "Roll back with: sudo deploy-gjej old-release"
+fi
 [[ "$status" == 200 ]] || echo "WARNING: health check did not return 200. Check the site." >&2
