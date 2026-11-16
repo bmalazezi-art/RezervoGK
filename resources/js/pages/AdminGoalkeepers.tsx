@@ -1,4 +1,4 @@
-import { Link, router } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import { useState, type FormEvent } from "react";
 import { t, useLocale } from "../i18n";
 import { AuthStatus } from "../components/KeeperAuthShell";
@@ -16,7 +16,7 @@ export default function AdminGoalkeepers({ profiles, filters, countries, cities 
   const sortBy = (sort: string) => router.get("/admin/goalkeepers", { ...filters, sort, direction: filters.sort === sort && filters.direction === "asc" ? "desc" : "asc" }, { preserveState: true, replace: true });
   const visibility = (profile: ProfileRow) => profile.isPubliclyVisible ? t("Publik") : profile.adminHidden ? t("Fshehur nga administratori") : profile.userSuspended ? t("Llogaria e pezulluar") : profile.isSuspended ? t("Pezulluar") : profile.isPublished ? t("Joaktiv") : t("I papublikuar");
   return <main className="page-main dashboard-page admin-dashboard">
-    <div className="dash-top section"><div><span>{t("ADMINISTRIMI")}</span><h1>{t("Listimet e portierëve")}</h1><p>{t("Kërko profilet dhe kontrollo dukshmërinë e tyre në marketplace.")}</p></div></div>
+    <div className="dash-top section"><div><span>{t("ADMINISTRIMI")}</span><h1>{t("Listimet e portierëve")}</h1><p>{t("Kërko profilet dhe kontrollo dukshmërinë e tyre në marketplace.")}</p><div className="admin-export-links">{usePage<{ auth: { canManageSystem: boolean } }>().props.auth.canManageSystem && <a className="btn btn-outline" href="/admin/export/goalkeepers.csv">{t("Shkarko CSV të portierëve")}</a>}</div></div></div>
     <section className="section admin-users-list"><AuthStatus />
       <form className="panel admin-filters" onSubmit={submit}>
         <label>{t("Kërko sipas emrit")}<input value={form.search} onChange={event => setForm({ ...form, search: event.target.value })} maxLength={100} /></label>

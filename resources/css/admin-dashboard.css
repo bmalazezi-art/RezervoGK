@@ -161,3 +161,13 @@
 .admin-insights tr.is-gap td:nth-child(3) { color: #a3361f; font-weight: 700; }
 .admin-muted-link { color: var(--muted); text-decoration: none; margin-left: 4px; }
 .admin-highlight-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.btn-danger { background: #b4321f; color: white; border-color: #b4321f; }
+.btn-danger:hover { background: #962613; }
+.admin-health-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.admin-health-card { display: flex; flex-direction: column; gap: 8px; }
+.admin-health-card h2 { font-size: 16px; margin: 0; }
+.admin-health-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.health-pill { align-self: flex-start; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+.health-pill.ok { background: #e6f5d0; color: #2f5a0f; }
+.health-pill.bad { background: #fde4df; color: #8f2512; }
+.admin-export-links { display: flex; flex-wrap: wrap; gap: 8px; }

@@ -1,4 +1,4 @@
-import { Link, router } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import { useState, type FormEvent } from "react";
 import { t, useLocale } from "../i18n";
 import { AuthStatus } from "../components/KeeperAuthShell";
@@ -19,7 +19,7 @@ export default function AdminUsers({ users, filters, countries, cities }: Props)
   const sortBy = (sort: string) => router.get("/admin/users", { ...filters, sort, direction: filters.sort === sort && filters.direction === "asc" ? "desc" : "asc" }, { preserveState: true, replace: true });
   const accountTypes: Record<string, string> = { admin: t("Administrator"), goalkeeper: t("Portier"), user: t("Përdorues") };
   return <main className="page-main dashboard-page admin-dashboard">
-    <div className="dash-top section"><div><span>{t("ADMINISTRIMI")}</span><h1>{t("Menaxhimi i përdoruesve")}</h1><p>{t("Kërko, filtro dhe shqyrto llogaritë e regjistruara.")}</p></div><Link className="text-link" href="/admin">{t("Kthehu te paneli")}</Link></div>
+    <div className="dash-top section"><div><span>{t("ADMINISTRIMI")}</span><h1>{t("Menaxhimi i përdoruesve")}</h1><p>{t("Kërko, filtro dhe shqyrto llogaritë e regjistruara.")}</p><div className="admin-export-links">{usePage<{ auth: { canManageSystem: boolean } }>().props.auth.canManageSystem && <a className="btn btn-outline" href="/admin/export/users.csv">{t("Shkarko CSV të përdoruesve")}</a>}</div></div><Link className="text-link" href="/admin">{t("Kthehu te paneli")}</Link></div>
     <section className="section admin-users-list"><AuthStatus />
       <form className="panel admin-filters" onSubmit={submit}>
         <label>{t("Kërko emër ose email")}<input value={form.search} onChange={event => setForm({ ...form, search: event.target.value })} maxLength={100} /></label>

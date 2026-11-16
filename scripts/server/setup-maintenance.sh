@@ -34,6 +34,12 @@ cp /etc/gjej/rezervogk.env "$DIR/env-$stamp.env"
 chown root:sudo "$DIR"/*-"$stamp".*
 chmod 0640 "$DIR"/*-"$stamp".*
 find "$DIR" -maxdepth 1 -type f -mtime +14 -delete
+total="$(du -cb "$DIR"/*-"$stamp".* | tail -1 | cut -f1)"
+count="$(find "$DIR" -maxdepth 1 -type f -name 'db-*.sql.gz' | wc -l)"
+# Non-secret status for Admin > System health (no paths to data, no contents).
+printf '{"finished_at":"%s","bytes":%s,"kept_days":%s}\n' "$(date -Is)" "$total" "$count" > /var/lib/gjej-backup-status.json.tmp
+chmod 0644 /var/lib/gjej-backup-status.json.tmp
+mv /var/lib/gjej-backup-status.json.tmp /var/lib/gjej-backup-status.json
 echo "$(date -Is) backup ok: $(du -ch "$DIR"/*-"$stamp".* | tail -1 | cut -f1)"
 EOF
 chmod 0750 /usr/local/sbin/gjej-backup

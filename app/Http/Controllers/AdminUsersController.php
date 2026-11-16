@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AdminSystemAudit;
 use App\Models\AdminUserAudit;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\GoalkeeperProfile;
 use App\Models\User;
+use App\Support\AccountDeleter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -80,7 +83,7 @@ class AdminUsersController extends Controller
         ]);
     }
 
-    public function show(User $user)
+    public function show(Request $request, User $user)
     {
         $user->load(['goalkeeperProfile.city.country', 'goalkeeperProfile.weeklyHours', 'goalkeeperProfile.upcomingAvailabilities', 'goalkeeperProfile.upcomingAvailabilityExceptions']);
         $profile = $user->goalkeeperProfile;
@@ -97,6 +100,8 @@ class AdminUsersController extends Controller
                 'isAdmin' => $user->is_admin, 'isSuspended' => $user->is_suspended,
                 'isSuperAdmin' => $user->hasSuperAdminIdentity(),
             ],
+            'canDelete' => $request->user()->can('manage-system-settings') && (int) $request->user()->id !== (int) $user->id
+                && ! $user->is_admin && ! $user->hasSuperAdminIdentity(),
             'profile' => $profile ? [
                 'id' => $profile->id, 'name' => $profile->name,
                 'country' => $profile->city?->country?->name, 'city' => $profile->city?->name,
@@ -146,5 +151,39 @@ class AdminUsersController extends Controller
         });
 
         return back()->with('status', $data['suspended'] ? __('Llogaria u pezullua.') : __('Llogaria u riaktivizua.'));
+    }
+
+    public function sendPasswordReset(Request $request, User $user)
+    {
+        Password::sendResetLink(['email' => $user->email]);
+        AdminUserAudit::create([
+            'actor_id' => $request->user()->id, 'target_id' => $user->id,
+            'action' => 'password_reset_sent', 'reason' => 'Administrator sent a password reset link.', 'created_at' => now(),
+        ]);
+
+        return back()->with('status', __('Nëse email-i funksionon, përdoruesi do të marrë lidhjen për rivendosjen e fjalëkalimit.'));
+    }
+
+    public function destroy(Request $request, User $user, AccountDeleter $deleter)
+    {
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'min:10', 'max:500'],
+            'confirm_email' => ['required', 'string'],
+        ]);
+        if (mb_strtolower(trim($data['confirm_email'])) !== mb_strtolower(trim($user->email))) {
+            return back()->withErrors(['confirm_email' => __('Email-i i konfirmimit nuk përputhet.')]);
+        }
+        abort_if((int) $request->user()->id === (int) $user->id || $user->is_admin || $user->hasSuperAdminIdentity(), 403,
+            __('Administratorët nuk fshihen nga këtu. Hiqu më parë qasjen administrative.'));
+
+        $userId = $user->id;
+        $deleter->delete($user);
+        AdminSystemAudit::create([
+            'actor_id' => $request->user()->id, 'target_id' => null, 'action' => 'account_deleted',
+            'previous_values' => ['user_id' => $userId], 'new_values' => ['deleted' => true],
+            'reason' => trim($data['reason']), 'created_at' => now(),
+        ]);
+
+        return to_route('admin.users')->with('status', __('Llogaria u fshi përgjithmonë.'));
     }
 }

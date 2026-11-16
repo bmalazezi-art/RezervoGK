@@ -7,4 +7,6 @@ return [
     'code_minutes' => 10,
     'max_attempts' => 5,
     'resend_after_seconds' => 60,
+    // Written by the nightly server backup (scripts/server/setup-maintenance.sh); read by Admin > System health.
+    'backup_status_file' => env('BACKUP_STATUS_FILE', '/var/lib/gjej-backup-status.json'),
 ];

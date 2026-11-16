@@ -4,8 +4,10 @@ use App\Http\Controllers\AccountDeletionController;
 use App\Http\Controllers\AccountSettingsController;
 use App\Http\Controllers\AdminAnalyticsController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminExportController;
 use App\Http\Controllers\AdminGoalkeeperReportController;
 use App\Http\Controllers\AdminGoalkeepersController;
+use App\Http\Controllers\AdminHealthController;
 use App\Http\Controllers\AdminInsightsController;
 use App\Http\Controllers\AdminPaymentController;
 use App\Http\Controllers\AdminSystemController;
@@ -80,6 +82,7 @@ Route::middleware(['auth', 'auth.session', EnsureAccountIsActive::class, 'cache.
         Route::get('/analytics', AdminAnalyticsController::class)->name('admin.analytics');
         Route::get('/users', AdminUsersController::class)->name('admin.users');
         Route::get('/users/{user}', [AdminUsersController::class, 'show'])->whereNumber('user')->name('admin.users.show');
+        Route::post('/users/{user}/password-reset', [AdminUsersController::class, 'sendPasswordReset'])->whereNumber('user')->middleware('throttle:10,1')->name('admin.users.password-reset');
         Route::patch('/users/{user}/suspension', [AdminUsersController::class, 'updateSuspension'])->whereNumber('user')->middleware('throttle:20,1')->name('admin.users.suspension');
         Route::get('/goalkeepers', [AdminGoalkeepersController::class, 'index'])->name('admin.goalkeepers');
         Route::get('/goalkeepers/{profile}', [AdminGoalkeepersController::class, 'show'])->whereNumber('profile')->name('admin.goalkeepers.show');
@@ -97,6 +100,10 @@ Route::middleware(['auth', 'auth.session', EnsureAccountIsActive::class, 'cache.
     });
     Route::middleware('can:manage-system-settings')->prefix('admin')->group(function () {
         Route::get('/settings', [AdminSystemController::class, 'index'])->name('admin.settings');
+        Route::delete('/users/{user}', [AdminUsersController::class, 'destroy'])->whereNumber('user')->middleware('throttle:10,1')->name('admin.users.destroy');
+        Route::get('/health', AdminHealthController::class)->name('admin.health');
+        Route::get('/export/users.csv', [AdminExportController::class, 'users'])->middleware('throttle:10,1')->name('admin.export.users');
+        Route::get('/export/goalkeepers.csv', [AdminExportController::class, 'goalkeepers'])->middleware('throttle:10,1')->name('admin.export.goalkeepers');
         Route::patch('/settings', [AdminSystemController::class, 'updateSettings'])->middleware('throttle:20,1')->name('admin.settings.update');
     });
     Route::middleware('can:manage-admin-access')->prefix('admin')->group(function () {

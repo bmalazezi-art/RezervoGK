@@ -15,3 +15,6 @@ if (! LaunchModel::isFree()) {
 }
 
 Schedule::command('account-deletion:cleanup-files')->everyMinute()->withoutOverlapping(5);
+
+// Heartbeat so Admin > System health can show that the scheduler is running.
+Schedule::call(fn () => @touch(storage_path('framework/scheduler-heartbeat')))->everyMinute()->name('scheduler-heartbeat');

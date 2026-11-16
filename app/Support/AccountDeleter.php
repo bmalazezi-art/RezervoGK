@@ -17,7 +17,7 @@ class AccountDeleter
         $cleanupIds = DB::transaction(function () use ($user) {
             $lockedUser = $user->newQuery()->whereKey($user->id)->lockForUpdate()->firstOrFail();
             abort_unless(! $lockedUser->is_admin && ! $lockedUser->hasSuperAdminIdentity(), 403);
-            $profile = GoalkeeperProfile::where('user_id', $lockedUser->id)->lockForUpdate()->firstOrFail();
+            $profile = GoalkeeperProfile::where('user_id', $lockedUser->id)->lockForUpdate()->first();
             $paymentIds = DB::table('manual_payments')->where('user_id', $lockedUser->id)->pluck('id');
             $receipts = DB::table('manual_payments')->whereIn('id', $paymentIds)->whereNotNull('receipt_path')->pluck('receipt_path')->all();
 
@@ -36,12 +36,12 @@ class AccountDeleter
                 'receipt_path' => null, 'receipt_mime' => null,
             ]);
 
-            $photo = $profile->photo_path;
+            $photo = $profile?->photo_path;
             $cleanupIds = array_filter(array_merge(
                 [$this->cleanup->enqueue('public', $photo)],
                 array_map(fn (string $receipt) => $this->cleanup->enqueue('receipts', $receipt), $receipts),
             ));
-            $profile->delete(); // Cascades profile contacts, availability, analytics, formats, and reports.
+            $profile?->delete(); // Cascades profile contacts, availability, analytics, formats, and reports.
             $lockedUser->delete();
 
             return array_values(array_unique($cleanupIds));
