@@ -45,7 +45,7 @@ class FreeLaunchTest extends TestCase
         $profile = GoalkeeperProfile::firstOrFail();
         $profile->user()->associate($user);
         $profile->save();
-        $profile->availabilities()->create(['available_on' => now()->addDay()->toDateString()]);
+        $profile->availabilities()->create(['available_on' => AvailabilityCalendar::today()->addDay()->toDateString()]);
         $profile->weeklyHours()->create(['weekday' => 6, 'start_time' => '13:00', 'end_time' => '02:00']);
 
         return $user;
