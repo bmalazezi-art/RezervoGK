@@ -25,6 +25,10 @@
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
         <link rel="manifest" href="/manifest.webmanifest">
         <meta name="theme-color" content="#0a2421">
+        @php($cloudflareAnalyticsToken = \App\Support\CloudflareWebAnalytics::tokenFor(request()))
+        @if($cloudflareAnalyticsToken)
+            <meta name="cf-web-analytics-token" content="{{ $cloudflareAnalyticsToken }}">
+        @endif
         @viteReactRefresh
         @vite('resources/js/app.tsx')
         @inertiaHead

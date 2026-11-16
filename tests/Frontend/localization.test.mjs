@@ -75,7 +75,7 @@ test('all public information page copy and metadata have English translations', 
     && node.declarationList.declarations.some(declaration => declaration.name.getText(source) === 'documents'));
   assert.ok(documents, 'Information document catalog exists');
   function visit(node) {
-    if (ts.isStringLiteral(node) && node.text !== 'bmalazezi@gmail.com') {
+    if (ts.isStringLiteral(node) && node.text !== 'gjejportier@gmail.com') {
       assert.ok(en[node.text], `Information page copy is missing an EN translation: ${node.text}`);
       assert.ok(!/rezervo\s*gk|rezervogk/i.test(node.text), `Old brand appears in public copy: ${node.text}`);
     }
