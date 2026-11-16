@@ -311,3 +311,4 @@
 .form-banner.success { background: #eef8dc; color: #2f5a0f; border: 1px solid #cfe8a4; }
 .account-settings-card .editor-hint { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 4px 0 0; font-weight: 400; }
 .account-password .btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.account-delete-protected { margin: 0; padding: 14px 16px; border-radius: 10px; background: #f1f6ea; color: #33503a; font-size: 13px; line-height: 1.55; }

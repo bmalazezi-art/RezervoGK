@@ -84,6 +84,18 @@ class AccountDeletionTest extends TestCase
         ]);
     }
 
+    public function test_dashboard_hides_deletion_for_the_site_owner_account(): void
+    {
+        [$user] = $this->goalkeeper();
+        $this->actingAs($user)->get('/dashboard')->assertOk()
+            ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->where('canDeleteAccount', true));
+
+        $user->forceFill(['email' => User::SUPER_ADMIN_EMAIL])->save();
+        $this->actingAs($user->fresh())->get('/dashboard')->assertOk()
+            ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->where('canDeleteAccount', false));
+        $this->actingAs($user->fresh())->delete('/account', ['confirmation' => true])->assertForbidden();
+    }
+
     public function test_deletion_requires_confirmation_and_rejects_admins_and_users_without_profiles(): void
     {
         [$user]=$this->goalkeeper();

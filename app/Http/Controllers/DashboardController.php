@@ -39,6 +39,8 @@ class DashboardController extends Controller
             'cities' => GoalkeeperPricing::cities(),
             'cityId' => $profile->city_id,
             'accountEmail' => $request->user()->email,
+            // The site owner/admin account cannot delete itself (the server also refuses).
+            'canDeleteAccount' => ! $request->user()->is_admin && ! $request->user()->hasSuperAdminIdentity(),
             'access' => GoalkeeperEligibility::status($request->user()),
             ...(LaunchModel::isFree() ? [] : [
                 'trial' => GoalkeeperTrial::status($request->user()),

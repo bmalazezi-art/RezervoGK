@@ -1220,5 +1220,6 @@
   "Nga Prishtina në Tiranë e deri në Shkup, Gjej portier lidh ekipet me portierët që bëjnë diferencën.": "From Prishtina to Tirana and Skopje, Gjej portier connects teams with the goalkeepers who make a difference.",
   "Shtete: Kosovë, Shqipëri, Maqedoni e Veriut": "Countries: Kosovo, Albania, North Macedonia",
   "Paneli": "Dashboard",
-  "Zgjidh datën": "Pick a date"
+  "Zgjidh datën": "Pick a date",
+  "Kjo është llogaria e administratorit kryesor të faqes, prandaj nuk mund të fshihet nga paneli. Kështu faqja nuk mbetet pa administrator.": "This is the site's main administrator account, so it can't be deleted from the dashboard. This keeps the site from being left without an administrator."
 }
