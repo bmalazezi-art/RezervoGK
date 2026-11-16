@@ -92,11 +92,31 @@ class GoalkeeperAuthenticationTest extends TestCase
             ->missing('auth.user.password')->missing('auth.user.remember_token')->missing('keeper.user_id'));
     }
 
-    public function test_registration_accepts_nine_a_side_format(): void
+    public function test_registration_accepts_seven_a_side_format(): void
     {
-        $this->post('/register', $this->registration(['formats' => ['9v9']]))->assertRedirect('/dashboard');
+        $this->post('/register', $this->registration(['formats' => ['7v7']]))->assertRedirect('/dashboard');
 
-        $this->assertSame(['9v9'], User::sole()->goalkeeperProfile->matchFormats->pluck('code')->all());
+        $this->assertSame(['7v7'], User::sole()->goalkeeperProfile->matchFormats->pluck('code')->all());
+    }
+
+    public function test_registration_offers_five_to_seven_a_side_and_eleven_a_side_but_not_nine(): void
+    {
+        $this->get('/register')->assertInertia(fn (Assert $page) => $page
+            ->where('formats', ['5v5', '6v6', '7v7', '11v11']));
+
+        $this->post('/register', $this->registration(['formats' => ['9v9']]))->assertSessionHasErrors('formats.0');
+    }
+
+    public function test_signing_in_or_registering_clears_signed_out_browser_history(): void
+    {
+        $this->post('/register', $this->registration())->assertRedirect('/dashboard')
+            ->assertSessionHas('inertia.clear_history', true);
+
+        Auth::logout();
+        $this->flushSession();
+
+        $this->post('/login', ['email' => User::sole()->email, 'password' => $this->registration()['password']])
+            ->assertSessionHas('inertia.clear_history', true);
     }
 
     public static function invalidRegistrations(): array

@@ -30,6 +30,7 @@ export default function Register({ countries, cities, formats }: {
     if (step === 1) { setStep(2); return; }
     form.post("/register", {
       forceFormData: true,
+      replace: true,
       onError: errors => {
         if (Object.keys(errors).some(key => !["email", "password", "password_confirmation"].includes(key))) setStep(1);
       },

@@ -298,3 +298,14 @@ footer { background: var(--navy); color: white; padding: 70px max(5vw, 30px) 28p
   .hero { min-height: 760px; padding-bottom: 20px; }
   .hero-content { padding-top: 220px; }
 }
+
+/* Phones and tablets: iOS zooms the page into any field whose text is under
+   16px, which pushes forms past the screen edge. Keep fields at 16px and make
+   labels and tap targets readable. */
+@media (pointer: coarse), (max-width: 760px) {
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea { font-size: 16px !important; }
+  .form-grid > label, .form-stack label, .full-label, .format-check > span { font-size: 13px; }
+  .register-form small, .register-form .terms { font-size: 12px; }
+  .format-check label { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 14px; font-size: 14px; }
+  .format-check input { width: 18px; height: 18px; }
+}

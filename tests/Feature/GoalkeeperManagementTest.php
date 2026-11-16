@@ -65,10 +65,10 @@ class GoalkeeperManagementTest extends TestCase
 
     public function test_owner_can_select_nine_a_side_format(): void
     {
-        $this->actingAs($this->owner)->patch('/keepers/'.$this->profile->id, $this->data(['formats' => ['9v9']]))
+        $this->actingAs($this->owner)->patch('/keepers/'.$this->profile->id, $this->data(['formats' => ['7v7']]))
             ->assertRedirect('/dashboard');
 
-        $this->assertSame(['9v9'], $this->profile->fresh()->matchFormats->pluck('code')->all());
+        $this->assertSame(['7v7'], $this->profile->fresh()->matchFormats->pluck('code')->all());
     }
 
     public static function invalidFields(): array

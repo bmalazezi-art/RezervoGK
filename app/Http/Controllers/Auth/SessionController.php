@@ -44,6 +44,9 @@ class SessionController extends Controller
         }
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
+        // Drop signed-out pages from browser history so Back cannot show the
+        // login form to a signed-in user; it reloads from the server instead.
+        Inertia::clearHistory();
 
         if (LaunchModel::isFree()) {
             $intended = $request->session()->get('url.intended');

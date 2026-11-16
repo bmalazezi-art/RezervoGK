@@ -37,7 +37,7 @@ class GoalkeeperDatabaseTest extends TestCase
         $this->assertDatabaseCount('countries', 3);
         $curatedCityCount = collect(MarketplaceCitySeeder::locations())->sum(fn (array $cities) => count($cities));
         $this->assertDatabaseCount('cities', $curatedCityCount);
-        $this->assertDatabaseCount('match_formats', 5);
+        $this->assertDatabaseCount('match_formats', 4);
         $this->assertDatabaseCount('goalkeeper_profiles', 4);
         $this->assertDatabaseCount('goalkeeper_contacts', 4);
         $this->assertDatabaseCount('goalkeeper_profile_match_format', 9);
@@ -94,7 +94,7 @@ class GoalkeeperDatabaseTest extends TestCase
         $this->get('/browse?format=7v7')->assertInertia(fn (Assert $page) => $page
             ->has('keepers', 2)->where('keepers.0.name', 'Leon Dervishi')->where('keepers.1.name', 'Enis Hasani'));
         $this->get("/browse?country_id={$country->id}")->assertInertia(fn (Assert $page) => $page->has('keepers', 2));
-        $this->get('/browse?format=9v9')->assertInertia(fn (Assert $page) => $page
+        $this->get('/browse?format=11v11')->assertInertia(fn (Assert $page) => $page
             ->has('keepers', 1)->where('keepers.0.name', 'Enis Hasani'));
     }
 
@@ -147,7 +147,7 @@ class GoalkeeperDatabaseTest extends TestCase
         $this->assertDatabaseMissing('goalkeeper_contacts', ['goalkeeper_profile_id' => $id]);
         $this->assertDatabaseMissing('goalkeeper_profile_match_format', ['goalkeeper_profile_id' => $id]);
         $this->assertSame(3, GoalkeeperContact::count());
-        $this->assertSame(5, MatchFormat::count());
+        $this->assertSame(4, MatchFormat::count());
     }
 
     public function test_an_empty_database_returns_an_empty_listing(): void

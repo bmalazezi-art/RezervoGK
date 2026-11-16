@@ -68,6 +68,7 @@ class RegistrationController extends Controller
         event(new Registered($user));
         Auth::login($user);
         $request->session()->regenerate();
+        Inertia::clearHistory();
 
         return to_route('dashboard')->with('status', __('Llogaria dhe profili yt u krijuan.'));
     }
