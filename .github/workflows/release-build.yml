@@ -83,8 +83,13 @@ jobs:
   sign-and-upload:
     name: Sign and upload inactive candidate
     needs: build-release
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    # Signing and SFTP credentials must exist only as secrets of this environment
+    # (not repository secrets). Its protection rules are set in GitHub settings.
+    environment:
+      name: gjej-production-release
     permissions:
       contents: read
     steps:

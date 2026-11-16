@@ -1,0 +1,104 @@
+name: Verify Gjej release signing key
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-signing-key:
+    name: Verify signing key against v2 pin
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: gjej-release-key-verification
+    permissions:
+      contents: read
+    steps:
+      - name: Check out protected main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Install and authenticate Minisign 0.12
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y minisign
+          tool_dir="$RUNNER_TEMP/minisign-0.12"
+          mkdir -m 0700 "$tool_dir"
+          curl --fail --location --silent --show-error --retry 3 \
+            https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-linux.tar.gz \
+            --output "$tool_dir/minisign-0.12-linux.tar.gz"
+          curl --fail --location --silent --show-error --retry 3 \
+            https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-linux.tar.gz.minisig \
+            --output "$tool_dir/minisign-0.12-linux.tar.gz.minisig"
+          /usr/bin/minisign -Vm "$tool_dir/minisign-0.12-linux.tar.gz" \
+            -x "$tool_dir/minisign-0.12-linux.tar.gz.minisig" \
+            -P RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3
+          tar -xzf "$tool_dir/minisign-0.12-linux.tar.gz" -C "$tool_dir" minisign-linux/x86_64/minisign
+          "$tool_dir/minisign-linux/x86_64/minisign" -v
+          echo "$tool_dir/minisign-linux/x86_64" >> "$GITHUB_PATH"
+
+      - name: Sign and verify a synthetic message
+        shell: bash
+        env:
+          GJEJ_RELEASE_SIGNING_KEY: ${{ secrets.GJEJ_RELEASE_SIGNING_KEY }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          temp_dir="$(mktemp -d "$RUNNER_TEMP/gjej-key-verify.XXXXXX")"
+          cleanup() { rm -rf -- "$temp_dir"; }
+          trap cleanup EXIT
+          trap 'exit 129' HUP
+          trap 'exit 130' INT
+          trap 'exit 143' TERM
+          chmod 0700 "$temp_dir"
+          export GJEJ_VERIFY_TEMP_DIR="$temp_dir"
+
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          secret = os.environ.get("GJEJ_RELEASE_SIGNING_KEY", "")
+          try:
+              bundle = json.loads(secret)
+          except (json.JSONDecodeError, TypeError):
+              raise SystemExit("Signing secret format is invalid.")
+          if not isinstance(bundle, dict) or set(bundle) != {"private_key", "passphrase"}:
+              raise SystemExit("Signing secret format is invalid.")
+          if not all(isinstance(bundle[field], str) and bundle[field] for field in ("private_key", "passphrase")):
+              raise SystemExit("Signing secret is incomplete.")
+
+          root = Path(os.environ["GJEJ_VERIFY_TEMP_DIR"])
+          for name, value in (("minisign.key", bundle["private_key"]), ("minisign.passphrase", bundle["passphrase"])):
+              content = value.encode("utf-8")
+              if b"\x00" in content:
+                  raise SystemExit("Signing secret contains invalid file data.")
+              if name == "minisign.key":
+                  content = content.replace(b"\r\n", b"\n").rstrip(b"\n") + b"\n"
+                  if b"\r" in content or len(content.splitlines()) != 2:
+                      raise SystemExit("Minisign private-key file format is invalid.")
+              else:
+                  if b"\r" in content or b"\n" in content:
+                      raise SystemExit("Signing passphrase must be a single line.")
+                  content += b"\n"
+              descriptor = os.open(root / name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+              with os.fdopen(descriptor, "wb") as output:
+                  output.write(content)
+          del bundle, secret
+          PY
+          unset GJEJ_RELEASE_SIGNING_KEY
+
+          printf 'Synthetic Gjej release-key verification challenge v1\n' > "$temp_dir/challenge.txt"
+          python3 -m scripts.release.verify_signing_key \
+            --private-key "$temp_dir/minisign.key" \
+            --passphrase-file "$temp_dir/minisign.passphrase" \
+            --public-key config/gjej-release-v2.pub \
+            --message "$temp_dir/challenge.txt" \
+            --signature "$temp_dir/challenge.txt.minisig"

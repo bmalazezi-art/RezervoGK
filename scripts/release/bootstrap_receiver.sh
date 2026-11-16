@@ -11,7 +11,6 @@ SOURCE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 TOOLS_ROOT=/usr/local/lib/gjej-release-tools
 CONFIG=/etc/gjej/release-receiver.json
 TRUSTED_KEY=/etc/gjej/gjej-release-v2.pub
-LEGACY_TRUSTED_KEY=/etc/gjej-release/minisign.pub
 RECEIVER_STATE=/var/lib/gjej-release-receiver
 INCOMING=/var/lib/gjej-deploy/incoming
 
@@ -26,10 +25,21 @@ GROUP_GID="$(getent group gjej-public | cut -d: -f3)"
 UPLOAD_SHELL="$(getent passwd gjej-deploy | cut -d: -f7)"
 [[ "$UPLOAD_SHELL" == /usr/sbin/nologin ]] || { echo 'gjej-deploy must have /usr/sbin/nologin.' >&2; exit 1; }
 MINISIGN_VERSION="$(/usr/local/bin/minisign -v 2>/dev/null || true)"
-[[ "$MINISIGN_VERSION" =~ minisign\ 0\.(12|[1-9][3-9]|[1-9][0-9]) ]] || {
+# BEGIN minisign-version-check
+# Parse major.minor numerically (base 10) and require >= 0.12, matching sign_artifact.py.
+minisign_version_ok=0
+if [[ "$MINISIGN_VERSION" =~ (^|[^[:alnum:]])minisign[[:space:]]+([0-9]+)\.([0-9]+)([^0-9]|$) ]]; then
+  minisign_major=$((10#${BASH_REMATCH[2]}))
+  minisign_minor=$((10#${BASH_REMATCH[3]}))
+  if (( minisign_major > 0 || minisign_minor >= 12 )); then
+    minisign_version_ok=1
+  fi
+fi
+(( minisign_version_ok == 1 )) || {
   echo 'Minisign 0.12 or newer must already be installed at /usr/local/bin/minisign.' >&2
   exit 1
 }
+# END minisign-version-check
 
 [[ -d "$INCOMING" && ! -L "$INCOMING" ]] || { echo 'Expected real incoming directory is missing.' >&2; exit 1; }
 [[ "$(stat -c '%u' "$INCOMING")" == "$UPLOAD_UID" ]] || { echo 'Incoming directory owner does not match gjej-deploy.' >&2; exit 1; }
@@ -42,39 +52,9 @@ for path in /etc/gjej /usr/local/lib /usr/local/sbin /var/lib /var/www/rezervogk
   (( (8#$mode & 0022) == 0 )) || { echo "Required directory is group/other-writable: $path" >&2; exit 1; }
 done
 
-if [[ -e "$LEGACY_TRUSTED_KEY" || -L "$LEGACY_TRUSTED_KEY" ]]; then
-  LEGACY_KEY_DIR="$(dirname "$LEGACY_TRUSTED_KEY")"
-  [[ -d "$LEGACY_KEY_DIR" && ! -L "$LEGACY_KEY_DIR" && "$(stat -c '%u' "$LEGACY_KEY_DIR")" == 0 ]] || {
-    echo 'Legacy trusted-key directory is not a protected real root-owned directory.' >&2
-    exit 1
-  }
-  legacy_dir_mode="$(stat -c '%a' "$LEGACY_KEY_DIR")"
-  (( (8#$legacy_dir_mode & 0022) == 0 )) || {
-    echo 'Legacy trusted-key directory is group/other-writable.' >&2
-    exit 1
-  }
-  [[ -f "$LEGACY_TRUSTED_KEY" && ! -L "$LEGACY_TRUSTED_KEY" && "$(stat -c '%u:%g:%a' "$LEGACY_TRUSTED_KEY")" == '0:0:644' ]] || {
-    echo 'Legacy trusted key has an unsafe type, owner, or mode; stop for manual review.' >&2
-    exit 1
-  }
-  cmp -s "$SOURCE_ROOT/config/gjej-release-v2.pub" "$LEGACY_TRUSTED_KEY" || {
-    echo 'Legacy trusted key differs from the repository v2 pin; an explicit key rotation is required. No trust key was changed.' >&2
-    exit 1
-  }
-fi
-
-[[ -e "$TRUSTED_KEY" || -L "$TRUSTED_KEY" ]] || {
-  echo 'Fixed receiver trust key is not preinstalled. Manually provision and verify the approved public key before bootstrap; this script never creates a trust root.' >&2
-  exit 1
-}
-[[ -f "$TRUSTED_KEY" && ! -L "$TRUSTED_KEY" && "$(stat -c '%u:%g:%a' "$TRUSTED_KEY")" == '0:0:644' ]] || {
-  echo 'Existing trusted key has an unsafe type, owner, or mode.' >&2
-  exit 1
-}
-cmp -s "$SOURCE_ROOT/config/gjej-release-v2.pub" "$TRUSTED_KEY" || {
-  echo 'Existing trusted key differs from the reviewed repository pin; stop for key-rotation review. No trust key was changed.' >&2
-  exit 1
-}
+PYTHONPATH="$SOURCE_ROOT" /usr/bin/python3 -m scripts.release.trusted_key \
+  --repository-key "$SOURCE_ROOT/config/gjej-release-v2.pub" \
+  --installed-key "$TRUSTED_KEY"
 
 [[ ! -L "$RECEIVER_STATE" ]] || { echo 'Receiver state path may not be a symlink.' >&2; exit 1; }
 mkdir -p "$RECEIVER_STATE"
@@ -109,7 +89,7 @@ for path in "$TOOLS_ROOT/scripts" "$TOOLS_ROOT/scripts/release"; do
   mode="$(stat -c '%a' "$path")"
   (( (8#$mode & 0022) == 0 )) || { echo "Release tool directory is group/other-writable: $path" >&2; exit 1; }
 done
-for file in __init__.py common.py validate_artifact.py sign_artifact.py install_release.py receive_release.py; do
+for file in __init__.py common.py validate_artifact.py sign_artifact.py trusted_key.py install_release.py receive_release.py; do
   source="$SOURCE_ROOT/scripts/release/$file"
   destination="$TOOLS_ROOT/scripts/release/$file"
   [[ -f "$source" && ! -L "$source" ]] || { echo "Missing reviewed release tool: $file" >&2; exit 1; }

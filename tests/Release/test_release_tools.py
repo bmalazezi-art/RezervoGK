@@ -3,10 +3,15 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import pty
+import re
 import shutil
+import selectors
 import subprocess
 import tarfile
+import termios
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -19,6 +24,8 @@ from scripts.release.package_release import PROJECT_DIRS, ROOT_FILES, copy_commi
 from scripts.release.sign_artifact import sign_artifact, verify_signed_artifact
 from scripts.release.install_release import install_signed_release
 from scripts.release import receive_release as receiver
+from scripts.release import trusted_key as trusted_key_tools
+from scripts.release import verify_signing_key as signing_key_check
 from scripts.release.validate_artifact import REQUIRED_FILES, validate_archive
 
 
@@ -182,13 +189,319 @@ class ReceiverBootstrapPolicyTests(unittest.TestCase):
     def test_bootstrap_requires_a_preinstalled_pin_and_never_installs_one(self) -> None:
         bootstrap = (ROOT / "scripts/release/bootstrap_receiver.sh").read_text(encoding="utf-8")
         self.assertIn("TRUSTED_KEY=/etc/gjej/gjej-release-v2.pub", bootstrap)
-        self.assertIn("LEGACY_TRUSTED_KEY=/etc/gjej-release/minisign.pub", bootstrap)
-        self.assertIn("Fixed receiver trust key is not preinstalled", bootstrap)
-        self.assertIn("cmp -s \"$SOURCE_ROOT/config/gjej-release-v2.pub\" \"$TRUSTED_KEY\"", bootstrap)
-        self.assertNotIn(
-            'install -o root -g root -m 0644 "$SOURCE_ROOT/config/gjej-release-v2.pub" "$TRUSTED_KEY"',
-            bootstrap,
+        self.assertNotIn("LEGACY_TRUSTED_KEY", bootstrap)
+        self.assertIn("trusted_key.py", bootstrap)
+        self.assertIn('PYTHONPATH="$SOURCE_ROOT" /usr/bin/python3 -m scripts.release.trusted_key', bootstrap)
+        self.assertNotIn('"$SOURCE_ROOT/config/gjej-release-v2.pub" "$TRUSTED_KEY"', bootstrap)
+        receiver_source = (ROOT / "scripts/release/receive_release.py").read_text(encoding="utf-8")
+        self.assertIn('"trusted_public_key": "/etc/gjej/gjej-release-v2.pub"', receiver_source)
+        self.assertNotIn("/etc/gjej-release/minisign.pub", receiver_source)
+
+    def test_bootstrap_minisign_version_check_requires_0_12_or_newer(self) -> None:
+        bootstrap = (ROOT / "scripts/release/bootstrap_receiver.sh").read_text(encoding="utf-8")
+        match = re.search(
+            r"# BEGIN minisign-version-check\n(.*?)# END minisign-version-check", bootstrap, re.DOTALL
         )
+        self.assertIsNotNone(match)
+        check = match.group(1)
+        cases = {
+            "minisign 0.12": True,
+            "minisign 0.12\n": True,
+            "minisign 0.13": True,
+            "minisign 0.20": True,
+            "minisign 0.100": True,
+            "minisign 1.0": True,
+            "minisign 0.09": False,
+            "minisign 0.10": False,
+            "minisign 0.11": False,
+            "minisign 0.11.1": False,
+            "minisign 0.1": False,
+            "minisign 0.2": False,
+            "notminisign 0.12": False,
+            "minisign": False,
+            "": False,
+        }
+        for output, accepted in cases.items():
+            with self.subTest(output=output):
+                result = subprocess.run(
+                    ["bash", "-c", 'set -Eeuo pipefail\nMINISIGN_VERSION="$1"\n' + check + "echo accepted\n", "check", output],
+                    stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, timeout=10,
+                )
+                self.assertEqual(result.returncode == 0 and result.stdout == b"accepted\n", accepted, result.stderr)
+
+    def test_release_credentials_are_only_referenced_by_the_protected_environment_job(self) -> None:
+        workflow = (ROOT / ".github/workflows/release-build.yml").read_text(encoding="utf-8")
+        build_start = workflow.index("\n  build-release:\n")
+        sign_start = workflow.index("\n  sign-and-upload:\n")
+        self.assertLess(build_start, sign_start)
+        preamble, build_job, sign_job = workflow[:build_start], workflow[build_start:sign_start], workflow[sign_start:]
+        for section in (preamble, build_job):
+            self.assertNotIn("secrets.", section)
+            self.assertNotIn("environment:", section)
+        self.assertIn("    if: github.ref == 'refs/heads/main'\n", sign_job)
+        self.assertIn("    environment:\n      name: gjej-production-release\n", sign_job)
+        self.assertEqual(
+            sorted(set(re.findall(r"secrets\.([A-Z0-9_]+)", sign_job))),
+            ["GJEJ_DEPLOY_SSH_KEY", "GJEJ_RELEASE_SIGNING_KEY"],
+        )
+        self.assertNotIn("workflow_dispatch", workflow)
+        self.assertNotIn("pull_request", workflow)
+
+    def test_verification_workflow_is_manual_protected_and_has_no_deployment_capability(self) -> None:
+        workflow = (ROOT / ".github/workflows/verify-release-signing-key.yml").read_text(encoding="utf-8")
+        self.assertIn("workflow_dispatch:", workflow)
+        self.assertIn("if: github.ref == 'refs/heads/main'", workflow)
+        self.assertIn("name: gjej-release-key-verification", workflow)
+        self.assertIn("contents: read", workflow)
+        self.assertIn("GJEJ_RELEASE_SIGNING_KEY", workflow)
+        self.assertNotIn("GJEJ_DEPLOY_SSH_KEY", workflow)
+        self.assertNotIn("sftp ", workflow.lower())
+        self.assertNotIn("ssh ", workflow.lower())
+        self.assertNotIn("pull_request_target", workflow)
+        self.assertIn('content.replace(b"\\r\\n", b"\\n").rstrip(b"\\n") + b"\\n"', workflow)
+        self.assertIn('len(content.splitlines()) != 2', workflow)
+
+
+class TrustedV2KeyTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        os.chmod(self.root, 0o700)
+        self.repository_key = ROOT / "config/gjej-release-v2.pub"
+        self.installed_key = self.root / "gjej-release-v2.pub"
+        shutil.copyfile(self.repository_key, self.installed_key)
+        self.installed_key.chmod(0o644)
+        self.owner_uid = os.getuid()
+        self.group_gid = os.getgid()
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def validate(self) -> str:
+        return trusted_key_tools.validate_trust_pair(
+            self.repository_key,
+            self.installed_key,
+            owner_uid=self.owner_uid,
+            group_gid=self.group_gid,
+        )
+
+    def test_matching_v2_key_succeeds_with_a_distinct_legacy_key_present(self) -> None:
+        legacy = self.root / "legacy-minisign.pub"
+        legacy.write_text("legacy key fixture\n", encoding="ascii")
+        self.assertEqual(self.validate(), trusted_key_tools.V2_KEY_ID)
+
+    def test_matching_v2_key_succeeds_without_a_legacy_key(self) -> None:
+        self.assertEqual(self.validate(), trusted_key_tools.V2_KEY_ID)
+
+    def test_missing_v2_key_fails_closed(self) -> None:
+        self.installed_key.unlink()
+        with self.assertRaisesRegex(ReleaseError, "unavailable"):
+            self.validate()
+
+    def test_v2_fingerprint_mismatch_fails_closed(self) -> None:
+        lines = self.installed_key.read_bytes().splitlines()
+        lines[1] = lines[1][:-1] + (b"A" if lines[1][-1:] != b"A" else b"B")
+        self.installed_key.write_bytes(b"\n".join(lines) + b"\n")
+        with self.assertRaisesRegex(ReleaseError, "does not match"):
+            self.validate()
+
+    def test_malformed_v2_key_fails_closed(self) -> None:
+        self.installed_key.write_text("not a Minisign public key\n", encoding="ascii")
+        with self.assertRaisesRegex(ReleaseError, "format is invalid"):
+            self.validate()
+
+    def test_v2_symlink_fails_closed(self) -> None:
+        replacement = self.root / "replacement.pub"
+        replacement.write_bytes(self.installed_key.read_bytes())
+        replacement.chmod(0o644)
+        self.installed_key.unlink()
+        self.installed_key.symlink_to(replacement)
+        with self.assertRaisesRegex(ReleaseError, "regular non-symlink"):
+            self.validate()
+
+    def test_unsafe_ownership_or_permissions_fails_closed(self) -> None:
+        with self.assertRaisesRegex(ReleaseError, "ownership"):
+            trusted_key_tools.validate_trust_pair(
+                self.repository_key, self.installed_key,
+                owner_uid=self.owner_uid + 1, group_gid=self.group_gid,
+            )
+        self.installed_key.chmod(0o664)
+        with self.assertRaisesRegex(ReleaseError, "permissions"):
+            self.validate()
+
+    def test_legacy_key_does_not_create_a_fallback_path(self) -> None:
+        legacy = self.root / "legacy-minisign.pub"
+        legacy.write_text("different legacy key fixture\n", encoding="ascii")
+        self.assertEqual(self.validate(), trusted_key_tools.V2_KEY_ID)
+        self.assertEqual(trusted_key_tools.validate_repository_pin(self.repository_key), trusted_key_tools.V2_KEY_ID)
+
+
+class SigningKeyVerificationWorkflowTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        os.chmod(self.root, 0o700)
+        self.private_key = self.root / "minisign.key"
+        self.private_key.write_text("synthetic encrypted key fixture\n", encoding="ascii")
+        self.private_key.chmod(0o600)
+        self.passphrase = self.root / "minisign.passphrase"
+        self.passphrase.write_text("synthetic passphrase\n", encoding="ascii")
+        self.passphrase.chmod(0o600)
+        self.message = self.root / "challenge.txt"
+        self.message.write_text("synthetic challenge\n", encoding="ascii")
+        self.signature = self.root / "challenge.txt.minisig"
+        self.public_key = ROOT / "config/gjej-release-v2.pub"
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def test_synthetic_sign_and_verify_returns_only_the_public_key_id(self) -> None:
+        completed = subprocess.CompletedProcess(args=["minisign"], returncode=0, stdout=b"", stderr=b"")
+        def create_synthetic_signature(_executable, args, _passphrase):
+            destination = Path(args[args.index("-x") + 1])
+            destination.write_text("synthetic signature fixture\n", encoding="ascii")
+            destination.chmod(0o600)
+            return 0
+
+        with patch.object(signing_key_check, "_minisign_executable", return_value="minisign"), \
+                patch.object(signing_key_check, "_run_minisign_with_passphrase", side_effect=create_synthetic_signature), \
+                patch.object(signing_key_check, "_run_minisign", return_value=completed):
+            key_id = signing_key_check.verify_signing_key(
+                self.private_key, self.passphrase, self.public_key, self.message, self.signature,
+            )
+        self.assertEqual(key_id, trusted_key_tools.V2_KEY_ID)
+
+    def test_mismatched_signing_key_fails_without_printing_verifier_output(self) -> None:
+        completed = subprocess.CompletedProcess(args=["minisign"], returncode=1, stdout=b"secret-looking data", stderr=b"secret-looking error")
+        def create_synthetic_signature(_executable, args, _passphrase):
+            destination = Path(args[args.index("-x") + 1])
+            destination.write_text("synthetic signature fixture\n", encoding="ascii")
+            destination.chmod(0o600)
+            return 0
+
+        with patch.object(signing_key_check, "_minisign_executable", return_value="minisign"), \
+                patch.object(signing_key_check, "_run_minisign_with_passphrase", side_effect=create_synthetic_signature), \
+                patch.object(signing_key_check, "_run_minisign", return_value=completed):
+            with self.assertRaisesRegex(ReleaseError, "does not match") as raised:
+                signing_key_check.verify_signing_key(
+                    self.private_key, self.passphrase, self.public_key, self.message, self.signature,
+                )
+        self.assertNotIn("secret-looking", str(raised.exception))
+
+
+@unittest.skipUnless(shutil.which("minisign"), "Minisign is required for synthetic signing integration tests")
+class SigningKeyVerificationIntegrationTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory(prefix="gjej-signing-key-test-")
+        self.root = Path(self.temp.name)
+        os.chmod(self.root, 0o700)
+        self.passphrase = self.root / "synthetic.passphrase"
+        self.passphrase.write_bytes(b"synthetic-only-passphrase-98!\n")
+        self.passphrase.chmod(0o600)
+        self.message = self.root / "synthetic-message.txt"
+        self.message.write_bytes(b"Synthetic Gjej release-key integration test.\n")
+        self.first_private = self.root / "first-synthetic.key"
+        self.first_public = self.root / "first-synthetic.pub"
+        self.second_private = self.root / "second-synthetic.key"
+        self.second_public = self.root / "second-synthetic.pub"
+        self._generate_encrypted_keypair(self.first_private, self.first_public)
+        self._generate_encrypted_keypair(self.second_private, self.second_public)
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def _generate_encrypted_keypair(self, private_key: Path, public_key: Path) -> None:
+        executable = shutil.which("minisign")
+        if executable is None:
+            self.skipTest("Minisign is unavailable")
+        master_fd, slave_fd = pty.openpty()
+        attributes = termios.tcgetattr(slave_fd)
+        attributes[3] &= ~termios.ECHO
+        termios.tcsetattr(slave_fd, termios.TCSANOW, attributes)
+        process: subprocess.Popen[bytes] | None = None
+        try:
+            process = subprocess.Popen(
+                [executable, "-G", "-s", str(private_key), "-p", str(public_key)],
+                stdin=slave_fd, stdout=slave_fd, stderr=slave_fd, close_fds=True,
+                start_new_session=True,
+            )
+            os.close(slave_fd)
+            slave_fd = -1
+            os.set_blocking(master_fd, False)
+            selector = selectors.DefaultSelector()
+            selector.register(master_fd, selectors.EVENT_READ)
+            output = bytearray()
+            sent_prompts = 0
+            prompt = re.compile(rb"(?i)(?:password|passphrase)[^\r\n]{0,160}:")
+            deadline = time.monotonic() + 30
+            while time.monotonic() < deadline:
+                if process.poll() is not None:
+                    events = selector.select(timeout=0.1)
+                    if not events:
+                        break
+                else:
+                    events = selector.select(timeout=0.1)
+                for _, _ in events:
+                    try:
+                        block = os.read(master_fd, 4096)
+                    except OSError:
+                        block = b""
+                    if block:
+                        output.extend(block)
+                        if len(output) > 32768:
+                            self.fail("Synthetic Minisign key generation produced excessive output.")
+                        prompts = list(prompt.finditer(output))
+                        while sent_prompts < len(prompts):
+                            os.write(master_fd, b"synthetic-only-passphrase-98!\n")
+                            sent_prompts += 1
+                if process.poll() is not None:
+                    break
+            else:
+                self.fail("Synthetic Minisign key generation timed out.")
+            returncode = process.wait(timeout=2)
+            self.assertEqual(returncode, 0, "Synthetic encrypted Minisign key generation failed.")
+            self.assertGreaterEqual(sent_prompts, 2, "Minisign did not request and receive the key passphrase twice.")
+            self.assertTrue(private_key.is_file())
+            self.assertTrue(public_key.is_file())
+            private_key.chmod(0o600)
+            self.assertFalse(private_key.read_bytes().endswith(b"\n\n"))
+        finally:
+            if process is not None and process.poll() is None:
+                process.kill()
+                process.wait()
+            if slave_fd >= 0:
+                os.close(slave_fd)
+            os.close(master_fd)
+
+    def test_real_minisign_signing_key_verification_and_mismatch(self) -> None:
+        matching_signature = self.root / "matching.txt.minisig"
+        mismatched_signature = self.root / "mismatched.txt.minisig"
+        extracted_private = self.root / "json-extracted-synthetic.key"
+        serialized_secret_value = self.first_private.read_text(encoding="utf-8")
+        normalized_key = serialized_secret_value.encode("utf-8").replace(b"\r\n", b"\n").rstrip(b"\n") + b"\n"
+        self.assertEqual(normalized_key, self.first_private.read_bytes())
+        extracted_private.write_bytes(normalized_key)
+        extracted_private.chmod(0o600)
+
+        original_umask = os.umask(0o077)
+        try:
+            with patch.object(signing_key_check, "validate_repository_pin", return_value="synthetic-key-id"):
+                self.assertEqual(
+                    signing_key_check.verify_signing_key(
+                        extracted_private, self.passphrase, self.first_public,
+                        self.message, matching_signature,
+                    ),
+                    "synthetic-key-id",
+                )
+
+            with patch.object(signing_key_check, "validate_repository_pin", return_value="synthetic-key-id"):
+                with self.assertRaisesRegex(ReleaseError, "does not match the pinned"):
+                    signing_key_check.verify_signing_key(
+                        extracted_private, self.passphrase, self.second_public,
+                        self.message, mismatched_signature,
+                    )
+        finally:
+            os.umask(original_umask)
 
 
 class ArtifactValidationTests(unittest.TestCase):

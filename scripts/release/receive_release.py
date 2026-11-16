@@ -24,6 +24,7 @@ from typing import Any, Callable
 from scripts.release.common import ReleaseError
 from scripts.release.install_release import install_signed_release
 from scripts.release.sign_artifact import verify_signed_artifact
+from scripts.release.trusted_key import validate_installed_v2_key
 from scripts.release.validate_artifact import MAX_ARCHIVE_BYTES, MAX_MANIFEST_BYTES
 
 
@@ -291,6 +292,8 @@ def receive_submission(
         raise ReleaseError("Trusted release key may not be a symlink.")
     if not trusted_key.is_file() or trusted_key.stat().st_uid != expected_owner or trusted_key.stat().st_mode & 0o022:
         raise ReleaseError("Trusted release key must be a protected root-owned file.")
+    if require_root:
+        validate_installed_v2_key(trusted_key, owner_uid=0, group_gid=0, expected_mode=0o644)
     upload_dir_fd = _open_upload_directory(incoming_root / submission_id, settings.uploader_uid)
     quarantine: Path | None = None
     quarantine_created = False
