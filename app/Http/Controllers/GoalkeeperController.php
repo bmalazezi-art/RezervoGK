@@ -20,6 +20,8 @@ use Inertia\Response;
 
 class GoalkeeperController extends Controller
 {
+    public const PER_PAGE = 8;
+
     public function index(Request $request): Response
     {
         $filters = $request->validate([
@@ -51,9 +53,14 @@ class GoalkeeperController extends Controller
         }
 
         $date = $filters['date'] ?? null;
+        $page = $query->orderBy('id')->paginate(self::PER_PAGE)->withQueryString();
 
         return Inertia::render('Browse', [
-            'keepers' => GoalkeeperProfileResource::collection($query->orderBy('id')->get())->resolve(),
+            'keepers' => GoalkeeperProfileResource::collection($page->getCollection())->resolve(),
+            'pagination' => [
+                'page' => $page->currentPage(), 'lastPage' => $page->lastPage(),
+                'total' => $page->total(), 'perPage' => $page->perPage(),
+            ],
             'cities' => GoalkeeperPricing::cities(),
             'countries' => GoalkeeperPricing::countries(),
             'formats' => MatchFormat::inPreferredOrder()->pluck('code'),

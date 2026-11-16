@@ -15,7 +15,7 @@ class HomeController extends Controller
     {
         return Inertia::render('Home', [
             'keepers' => GoalkeeperProfileResource::collection(GoalkeeperProfile::publiclyVisible()->with(['city.country', 'contact', 'matchFormats', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions', 'weeklyHours'])
-                ->where('is_featured', true)->orderBy('id')->limit(3)->get())->resolve(),
+                ->orderByDesc('is_featured')->latest('id')->limit(4)->get())->resolve(),
             'cities' => GoalkeeperPricing::cities(),
             'countries' => GoalkeeperPricing::countries(),
             'today' => AvailabilityCalendar::today()->toDateString(),

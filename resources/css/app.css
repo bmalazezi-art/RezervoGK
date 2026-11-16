@@ -316,3 +316,31 @@ footer { background: var(--navy); color: white; padding: 70px max(5vw, 30px) 28p
 .browse-empty p { color: var(--muted); font-size: 14px; margin: 0; }
 .browse-empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 18px 0; }
 .browse-empty-invite a { font-weight: 700; text-decoration: underline; }
+
+/* Browse: compact cards so 8 fit on a page (4 per row on wide screens). */
+.browse-grid .contact-actions { margin-top: 12px; }
+.browse-grid .contact-actions a { min-height: 40px; }
+.browse-grid { grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 16px; }
+.browse-grid .keeper-image { height: 170px; }
+.browse-grid .keeper-info { padding: 13px; }
+.browse-grid .card-top h3 { font-size: 15px; }
+.browse-grid .card-top > strong { font-size: 16px; }
+.browse-grid .card-meta { padding-top: 10px; font-size: 11px; }
+.browse-grid .available-dot { font-size: 10px; padding: 5px 8px; max-width: calc(100% - 64px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.browse-grid .available-dot i { display: inline-block; vertical-align: middle; margin: -2px 5px 0 2px; }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 28px 0 8px; font-size: 13px; color: var(--muted); }
+.pagination .btn:disabled { opacity: .4; cursor: default; }
+@media (max-width: 560px) {
+  .browse-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .browse-grid .keeper-image { height: 130px; }
+  .browse-grid .keeper-info { padding: 10px; }
+  .browse-grid .card-top { flex-direction: column; gap: 4px; }
+  .browse-grid .card-top > strong { text-align: left; font-size: 15px; }
+  .browse-grid .card-top h3 { font-size: 14px; }
+  .browse-grid .card-top p { font-size: 11px; }
+  .browse-grid .card-meta { display: none; }
+  .browse-grid .contact-actions { grid-template-columns: 1fr; gap: 6px; margin-top: 10px; }
+  .browse-grid .contact-actions a { min-height: 40px; font-size: 11px; }
+  .browse-grid .heart { width: 30px; height: 30px; top: 8px; right: 8px; }
+  .browse-grid .available-dot { top: 8px; left: 8px; font-size: 9px; padding: 4px 7px; max-width: calc(100% - 48px); }
+}

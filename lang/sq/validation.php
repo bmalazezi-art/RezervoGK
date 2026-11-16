@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'current_password' => 'Fjalëkalimi aktual nuk është i saktë.',
     'list' => 'Fusha :attribute duhet të jetë listë.',
     'present' => 'Fusha :attribute duhet të jetë e pranishme.',
     'between' => [

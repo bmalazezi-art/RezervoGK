@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'current_password' => 'Your current password is incorrect.',
     'list' => 'The :attribute field must be a list.',
     'present' => 'The :attribute field must be present.',
     'between' => [

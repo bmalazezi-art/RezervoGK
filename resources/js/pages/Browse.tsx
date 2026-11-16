@@ -14,9 +14,10 @@ type BrowseProps = {
   filters: BrowseFilters;
   today: string;
   maxDate: string;
+  pagination?: { page: number; lastPage: number; total: number; perPage: number };
 };
 
-export default function Browse({ keepers, cities, countries, formats, filters, today, maxDate }: BrowseProps) {
+export default function Browse({ keepers, cities, countries, formats, filters, today, maxDate, pagination }: BrowseProps) {
   useLocale();
   const [draft, setDraft] = useState(filters);
   const [priceInput, setPriceInput] = useState(String(filters.max_price));
@@ -28,6 +29,12 @@ export default function Browse({ keepers, cities, countries, formats, filters, t
 
   const commit = (next: BrowseFilters) => router.get("/browse", Object.fromEntries(Object.entries(next).filter(([, value]) => value !== "")), {
     preserveState: true, preserveScroll: true, replace: true,
+  });
+  const total = pagination?.total ?? keepers.length;
+  const lastPage = pagination?.lastPage ?? 1;
+  const currentPage = pagination?.page ?? 1;
+  const goToPage = (page: number) => router.get("/browse", { ...Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== "")), ...(page > 1 ? { page } : {}) }, {
+    preserveState: true, onSuccess: () => document.querySelector(".results")?.scrollIntoView({ behavior: "smooth", block: "start" }),
   });
   const apply = (changes: Partial<BrowseFilters>) => {
     const next = { ...draft, ...changes };
@@ -56,9 +63,10 @@ export default function Browse({ keepers, cities, countries, formats, filters, t
     <section className="browse-hero"><div className="eyebrow"><span /> {t("GJEJ PORTIER")}</div><h1>{t("Gjej portierin e duhur për ndeshjen tënde.")}</h1><p>{t("Shfleto profilet dhe datat e publikuara nga portierët pranë teje.")}</p><SearchBar cities={cities} countries={countries} countryId={searchCountry} onCountryChange={id => { setSearchCountry(id); setSearchCity(""); }} cityId={searchCity} onCityChange={setSearchCity} date={searchDate} onDateChange={setSearchDate} minDate={today} maxDate={maxDate} onSearch={() => apply({ city_id: searchCity, country_id: searchCountry, date: searchDate, ...scopePrice(searchCity, searchCountry) })} /></section>
     <section className="browse-layout section">
       <aside className="filters">{filterFields}</aside>
-      <div className="results"><div className="results-head"><div><strong>{keepers.length} {keepers.length === 1 ? t("portier") : t("portierë")}</strong><span>{selectedCity ? t("pranë :city", { city: selectedCity.name }) : (selectedCountry ? t(selectedCountry.name) : t("Të gjitha qytetet"))}</span></div><button className="mobile-filter" aria-expanded={mobileFiltersOpen} onClick={() => setMobileFiltersOpen(value => !value)}><Icon name="filter" /> {t("Filtrat")}</button><select disabled aria-label={t("Renditja e portierëve")}><option>{t("Sipas listës")}</option></select></div>
+      <div className="results"><div className="results-head"><div><strong>{total} {total === 1 ? t("portier") : t("portierë")}</strong><span>{selectedCity ? t("pranë :city", { city: selectedCity.name }) : (selectedCountry ? t(selectedCountry.name) : t("Të gjitha qytetet"))}</span></div><button className="mobile-filter" aria-expanded={mobileFiltersOpen} onClick={() => setMobileFiltersOpen(value => !value)}><Icon name="filter" /> {t("Filtrat")}</button><select disabled aria-label={t("Renditja e portierëve")}><option>{t("Sipas listës")}</option></select></div>
         {mobileFiltersOpen && <div className="mobile-filter-dropdown"><div className="filters">{filterFields}</div><div className="mobile-filter-actions"><Button variant="outline" onClick={() => { setDraft(filters); setPriceInput(String(filters.max_price)); setMobileFiltersOpen(false); }}>{t("Mbyll")}</Button><Button onClick={() => { setMobileFiltersOpen(false); commit(draft); }}>{t("Apliko filtrat")}</Button></div></div>}
-        <div className="keeper-grid browse-grid">{keepers.map(keeper => <KeeperCard key={keeper.id} keeper={keeper} requestedDate={filters.date || undefined} onOpen={() => openKeeper(keeper, filters.date)} />)}{keepers.length === 0 && <div className="browse-empty" role="status"><h3>{t("Nuk u gjet asnjë portier me këta filtra.")}</h3><p>{t("Provo një zonë më të gjerë ose hiq disa filtra.")}</p><div className="browse-empty-actions">{selectedCity && <button type="button" className="btn btn-primary" onClick={() => { setSearchCity(""); apply({ city_id: "", country_id: String(selectedCity.country_id) }); }}>{t("Shiko gjithë :country", { country: t(countries.find(country => country.id === selectedCity.country_id)?.name ?? "") })}</button>}<button type="button" className="btn btn-outline" onClick={reset}>{t("Pastro filtrat")}</button></div><p className="browse-empty-invite">{t("Njeh një portier? Dërgoja linkun")} <a href="/register">gjejportier.online/register</a></p></div>}</div>
+        <div className="keeper-grid browse-grid">{keepers.map(keeper => <KeeperCard key={keeper.id} keeper={keeper} requestedDate={filters.date || undefined} onOpen={() => openKeeper(keeper, filters.date)} />)}{total === 0 && <div className="browse-empty" role="status"><h3>{t("Nuk u gjet asnjë portier me këta filtra.")}</h3><p>{t("Provo një zonë më të gjerë ose hiq disa filtra.")}</p><div className="browse-empty-actions">{selectedCity && <button type="button" className="btn btn-primary" onClick={() => { setSearchCity(""); apply({ city_id: "", country_id: String(selectedCity.country_id) }); }}>{t("Shiko gjithë :country", { country: t(countries.find(country => country.id === selectedCity.country_id)?.name ?? "") })}</button>}<button type="button" className="btn btn-outline" onClick={reset}>{t("Pastro filtrat")}</button></div><p className="browse-empty-invite">{t("Njeh një portier? Dërgoja linkun")} <a href="/register">gjejportier.online/register</a></p></div>}</div>
+        {lastPage > 1 && <nav className="pagination" aria-label={t("Faqet e rezultateve")}><button type="button" className="btn btn-outline" disabled={currentPage <= 1} onClick={() => goToPage(currentPage - 1)}>{t("← Para")}</button><span>{t("Faqja :page nga :last", { page: currentPage, last: lastPage })}</span><button type="button" className="btn btn-outline" disabled={currentPage >= lastPage} onClick={() => goToPage(currentPage + 1)}>{t("Pas →")}</button></nav>}
       </div>
     </section>
   </main>;

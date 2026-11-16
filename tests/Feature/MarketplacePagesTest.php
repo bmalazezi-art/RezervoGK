@@ -59,14 +59,44 @@ class MarketplacePagesTest extends TestCase
         $this->assertGreaterThan(0, $profile->review_count);
 
         foreach (['/', '/browse'] as $url) {
-            $this->get($url)->assertOk()->assertInertia(fn (Assert $page) => $page
-                ->where('keepers.0.id', $profile->id)->missing('keepers.0.rating')->missing('keepers.0.reviews')
-                ->missing('keepers.0.matchesPlayed')->missing('keepers.0.verified'));
+            $keepers = $this->get($url)->assertOk()->viewData('page')['props']['keepers'];
+            $this->assertContains($profile->id, array_column($keepers, 'id'));
+            foreach ($keepers as $keeper) {
+                foreach (['rating', 'reviews', 'matchesPlayed', 'verified'] as $field) {
+                    $this->assertArrayNotHasKey($field, $keeper);
+                }
+            }
         }
         $this->get('/keepers/'.$profile->id)->assertOk()->assertInertia(fn (Assert $page) => $page
             ->where('keeper.id', $profile->id)->missing('keeper.rating')->missing('keeper.reviews')
             ->missing('keeper.matchesPlayed')->missing('keeper.verified'));
         $this->assertSame($before, $profile->fresh()->getRawOriginal());
+    }
+
+    public function test_browse_shows_eight_goalkeepers_per_page(): void
+    {
+        $template = GoalkeeperProfile::firstOrFail();
+        foreach (range(1, 9) as $n) {
+            $copy = $template->replicate(['slug']);
+            $copy->slug = GoalkeeperProfile::uniqueSlug($template->name.' '.$n);
+            $owner = $template->user->replicate();
+            $owner->email = "keeper{$n}@example.test";
+            $owner->save();
+            $copy->user_id = $owner->id;
+            $copy->save();
+        }
+        $total = GoalkeeperProfile::publiclyVisible()->where('currency', 'EUR')->count();
+        $this->assertGreaterThan(8, $total, 'Test needs more than one page of goalkeepers.');
+
+        $this->get('/browse?max_price=1000')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->has('keepers', min(8, $total))->where('pagination.page', 1)->where('pagination.perPage', 8)
+            ->where('pagination.total', $total));
+    }
+
+    public function test_home_shows_up_to_four_goalkeepers(): void
+    {
+        $this->get('/')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('keepers', fn ($keepers) => count($keepers) > 0 && count($keepers) <= 4));
     }
 
     public function test_each_demo_profile_has_a_direct_url(): void

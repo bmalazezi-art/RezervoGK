@@ -87,7 +87,7 @@
 .account-settings-language > strong { display: block; margin-top: 8px; color: #34443d; font-size: 11px; }
 .account-settings-language small { display: block; margin-top: 6px; color: #586861; font-size: 10px; line-height: 1.5; }
 .password-rules { margin: 4px 0 16px; padding: 12px 14px; border-radius: 9px; background: #f1f6ea; }
-.password-rules ul { display: grid; gap: 5px; margin: 8px 0 0; padding-left: 17px; color: #52645d; font-size: 10px; line-height: 1.4; }
+.password-rules ul { display: grid; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; color: #52645d; font-size: 12px; line-height: 1.4; }
 .settings-save-success { margin: 11px 0 0; color: #365b12; font-size: 11px; font-weight: 700; }
 .account-password [role="alert"] { margin-top: 10px; }
 .profile-field-group { margin-top: 25px; padding-top: 18px; border-top: 1px solid var(--line); }
@@ -299,3 +299,15 @@
 .profile-checklist li.done span { color: var(--muted); text-decoration: line-through; }
 .profile-checklist li .text-link { margin-left: auto; font-weight: 700; }
 .overview-share { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* Password form: live rule checks, one inline error, clear success banner. */
+.password-rules li { display: flex; align-items: center; gap: 7px; }
+.password-rules li svg { color: #b9c4bf; flex: 0 0 auto; }
+.password-rules li.ok { color: #2f5a0f; }
+.password-rules li.ok svg { color: #4d8c1a; }
+.account-password label.has-error input { border-color: #c2412d; background: #fff7f5; }
+.account-password label [role="alert"] { margin-top: 0; color: #b4321f; font-size: 12px; font-weight: 600; }
+.form-banner { display: flex; align-items: center; gap: 9px; margin: 6px 0 4px; padding: 11px 14px; border-radius: 10px; font-size: 13px; font-weight: 700; }
+.form-banner.success { background: #eef8dc; color: #2f5a0f; border: 1px solid #cfe8a4; }
+.account-settings-card .editor-hint { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 4px 0 0; font-weight: 400; }
+.account-password .btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }

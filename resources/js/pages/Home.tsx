@@ -30,7 +30,9 @@ export default function Home({ keepers, cities, countries, today, initialDate, m
         <div><div className="eyebrow"><span /> {t("NJOHU ME PORTIERËT")}</div><h2>{t("Gati për ndeshjen tënde")}</h2><p>{t("Shiko profilet dhe datat e publikuara nga portierët.")}</p></div>
         <button className="text-link" onClick={() => setPage("browse")}>{t("Shiko të gjithë")} <Icon name="arrow" size={18} /></button>
       </div>
-      <div className="keeper-grid">{keepers.slice(0, 3).map(k => <KeeperCard key={k.id} keeper={k} onOpen={() => openKeeper(k)} />)}</div>
+      {keepers.length > 0
+        ? <div className="keeper-grid browse-grid">{keepers.slice(0, 4).map(k => <KeeperCard key={k.id} keeper={k} onOpen={() => openKeeper(k)} />)}</div>
+        : <div className="browse-empty"><h3>{t("Portierët e parë po regjistrohen.")}</h3><p>{t("Je portier? Krijo profilin falas dhe shfaqu këtu.")}</p><div className="browse-empty-actions"><Button onClick={() => setPage("register")}>{t("Krijo profilin falas")} <Icon name="arrow" /></Button></div></div>}
     </section>
 
     <section className="how-section">
@@ -43,10 +45,10 @@ export default function Home({ keepers, cities, countries, today, initialDate, m
     </section>
 
     <section className="section trust">
-      <div className="trust-copy"><div className="eyebrow"><span /> {t("E NDËRTUAR PËR FUTBOLLIN TONË")}</div><h2>{t("Më shumë lojë.")}<br />{t("Më pak organizim.")}</h2><p>{t("Nga Prishtina në Tiranë e deri në Shkup—Portieri lidh ekipet me lojtarët që bëjnë diferencën.")}</p>
+      <div className="trust-copy"><div className="eyebrow"><span /> {t("E NDËRTUAR PËR FUTBOLLIN TONË")}</div><h2>{t("Më shumë lojë.")}<br />{t("Më pak organizim.")}</h2><p>{t("Nga Prishtina në Tiranë e deri në Shkup, Gjej portier lidh ekipet me portierët që bëjnë diferencën.")}</p>
         <div className="trust-points"><div><Icon name="shield" /><span><strong>{t("Profile të plotësuara nga portierët")}</strong><small>{t("Datat dhe çmimet i caktojnë vetë")}</small></span></div><div><Icon name="users" /><span><strong>{t("Komunitet lokal")}</strong><small>{t("Kontakt pa ndërmjetësim")}</small></span></div></div>
       </div>
-      <div className="stats" aria-label={t("Kushtet e shërbimit")}><div><strong>€0</strong><span>{t("Për organizatorët")}</span></div><div><strong>€0</strong><span>{t("Për portierët")}</span></div><div><strong>€0</strong><span>{t("Pa abonim ose tarifë platforme.")}</span></div><div><strong>0%</strong><span>{t("Komision nga pagesa e ndeshjes")}</span></div></div>
+      <div className="stats" aria-label={t("Kushtet e shërbimit")}><div><strong>€0</strong><span>{t("Për organizatorët")}</span></div><div><strong>€0</strong><span>{t("Për portierët")}</span></div><div><strong>3</strong><span>{t("Shtete: Kosovë, Shqipëri, Maqedoni e Veriut")}</span></div><div><strong>0%</strong><span>{t("Komision nga pagesa e ndeshjes")}</span></div></div>
     </section>
 
     <section className="section cta-banner"><div><div className="eyebrow light"><span /> {t("PËR PORTIERËT")}</div><h2>{t("Talenti yt meriton")}<br />{t("më shumë ndeshje.")}</h2><p>{t("Krijo profilin, cakto çmimin e ndeshjes dhe fillo të marrësh kërkesa. Shërbimi i platformës është falas.")}</p><Button onClick={() => setPage("register")}>{t("Krijo profilin falas")} <Icon name="arrow" /></Button></div><div className="cta-price"><span>{t("Shërbim plotësisht falas")}</span><strong>€0<small>{t("Pa abonim")}</small></strong><em>{t("Pa komision për ndeshje")}</em></div></section>
