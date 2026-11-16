@@ -79,6 +79,38 @@ class AdminSystemTest extends TestCase
         $this->assertTrue($admin->fresh()->is_admin);
     }
 
+    public function test_public_announcement_follows_the_selected_locale_and_legacy_text_is_not_exposed(): void
+    {
+        PlatformSetting::updateOrCreate(['key' => 'announcement'], ['value' => 'Language unknown legacy announcement']);
+        PlatformSetting::updateOrCreate(['key' => 'announcement_sq'], ['value' => 'Njoftim në shqip']);
+        PlatformSetting::updateOrCreate(['key' => 'announcement_en'], ['value' => 'Notice in English']);
+
+        $this->withCookie('rezervogk_locale', 'sq')->get('/')
+            ->assertInertia(fn ($page) => $page->where('platformAnnouncement', 'Njoftim në shqip'));
+        $this->withCookie('rezervogk_locale', 'en')->get('/')
+            ->assertInertia(fn ($page) => $page->where('platformAnnouncement', 'Notice in English'));
+
+        PlatformSetting::whereKey('announcement_en')->delete();
+        $this->withCookie('rezervogk_locale', 'en')->get('/')
+            ->assertInertia(fn ($page) => $page->where('platformAnnouncement', ''));
+        $this->assertSame('Language unknown legacy announcement', PlatformSetting::value('announcement'));
+    }
+
+    public function test_admin_can_save_separate_public_announcement_languages(): void
+    {
+        $admin = User::factory()->create(['email' => 'bmalazezi@gmail.com', 'is_admin' => true]);
+
+        $this->actingAs($admin)->patch('/admin/settings', [
+            'registration_enabled' => true,
+            'announcement_sq' => 'Njoftim shqip',
+            'announcement_en' => 'English notice',
+            'reason' => 'Publishing notices in both supported languages.',
+        ])->assertRedirect();
+
+        $this->assertSame('Njoftim shqip', PlatformSetting::value('announcement_sq'));
+        $this->assertSame('English notice', PlatformSetting::value('announcement_en'));
+    }
+
     public function test_non_admin_cannot_grant_access_and_short_reasons_are_rejected(): void
     {
         $ordinary = User::factory()->create();

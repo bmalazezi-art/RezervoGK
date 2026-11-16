@@ -56,7 +56,7 @@ class GoalkeeperController extends Controller
             'keepers' => GoalkeeperProfileResource::collection($query->orderBy('id')->get())->resolve(),
             'cities' => GoalkeeperPricing::cities(),
             'countries' => GoalkeeperPricing::countries(),
-            'formats' => MatchFormat::orderBy('code')->pluck('code'),
+            'formats' => MatchFormat::inPreferredOrder()->pluck('code'),
             'today' => AvailabilityCalendar::today()->toDateString(),
             'maxDate' => AvailabilityCalendar::maxDate()->toDateString(),
             'filters' => [

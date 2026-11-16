@@ -92,7 +92,7 @@ class AdminGoalkeepersController extends Controller
                 'bio' => $profile->bio, 'photo' => ProfilePhoto::url($profile->photo_path, $profile->photo_url),
                 'price' => $profile->price_cents / 100, 'currency' => $profile->currency,
                 'experienceYears' => $profile->experience_years, 'languages' => $profile->languages ?? [],
-                'formats' => $profile->matchFormats()->orderBy('code')->pluck('code'),
+                'formats' => $profile->matchFormats()->inPreferredOrder()->pluck('code'),
                 'city' => $profile->city?->name, 'country' => $profile->city?->country?->name,
                 'user' => $profile->user ? ['id' => $profile->user->id, 'name' => $profile->user->name, 'email' => $profile->user->email, 'isSuspended' => $profile->user->is_suspended] : null,
                 'isPublished' => $profile->is_published, 'isSuspended' => $profile->is_suspended,

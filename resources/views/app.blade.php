@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="description" content="{{ $shareDescription ?? __('Gjej portier, kontakto direkt në WhatsApp ose telefon dhe paguaj në dorë në fushë.') }}">
+        <meta name="description" content="{{ $shareDescription ?? __('Gjej portier, kontakto drejtpërdrejt me WhatsApp ose telefon për ndeshjen tënde.') }}">
         @isset($shareUrl)
             <link rel="canonical" href="{{ $shareUrl }}">
             <meta property="og:type" content="profile">

@@ -42,23 +42,7 @@
   .weekly-schedule-day { min-height: 45px; }
 }
 
-.profile-report-card,
-.profile-report-card button,
-.profile-report-card input,
-.profile-report-card select,
-.profile-report-card textarea {
-  font-family: "DM Sans", sans-serif;
-}
-.profile-report-card > summary > span { font-family: "DM Sans", sans-serif; }
-
 /* Keep the report form typography aligned with the profile content around it. */
-.profile-report-card,
-.profile-report-card button,
-.profile-report-card input,
-.profile-report-card select,
-.profile-report-card textarea {
-  font-family: "DM Sans", sans-serif;
-}
 .profile-report-card > summary > span { font-size: 16px; font-weight: 700; }
 .profile-report-card > summary > small,
 .profile-report-body > p,
@@ -78,7 +62,7 @@
   line-height: 1.6;
 }
 .profile-report-form > label { font-weight: 600; }
-.profile-report-form > .btn { font-family: "DM Sans", sans-serif; font-size: 14px; }
+.profile-report-form > .btn { font-size: 14px; }
 
 /* Keep the contact guidance compact and the date lookup action intentional. */
 .profile-lower .reviews:not(.profile-report-card) {

@@ -187,7 +187,7 @@
 }
 
 /* Focused goalkeeper availability editor */
-.dashboard-page .availability-editor { display: grid; gap: 16px; padding: 18px; border-radius: 20px; background: #f1f6ea; font-family: "Outfit", "DM Sans", sans-serif; }
+.dashboard-page .availability-editor { display: grid; gap: 16px; padding: 18px; border-radius: 20px; background: #f1f6ea; }
 .availability-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 2px 4px 4px; }
 .availability-heading h1 { margin: 0 0 5px; font-size: 28px; letter-spacing: -.8px; }
 .availability-heading p { margin: 0; color: #52645d; font-size: 13px; line-height: 1.5; }

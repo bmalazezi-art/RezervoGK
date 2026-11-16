@@ -45,7 +45,7 @@ class DashboardController extends Controller
                 'bankTransfer' => ['configured' => BankTransfer::configured(), 'bank' => BankTransfer::details()],
                 'payments' => $request->user()->manualPayments()->with('subscription')->latest('id')->limit(20)->get()->map(fn ($payment) => PaymentView::owner($payment)),
             ]),
-            'formats' => MatchFormat::orderBy('code')->pluck('code'),
+            'formats' => MatchFormat::inPreferredOrder()->pluck('code'),
             'availabilityWindow' => AvailabilityCalendar::window($profile),
             'extraDates' => $profile->upcomingAvailabilities
                 ->filter(fn ($row) => $row->available_on->toDateString() <= AvailabilityCalendar::maxDate()->toDateString())

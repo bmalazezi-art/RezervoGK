@@ -9,5 +9,5 @@
 <p>{{ __('Njoftimi i pagesës u refuzua. Ky vendim nuk shton periudhë të re abonimi.') }}</p>
 <p>{{ __('Shiko arsyen dhe hollësitë në panelin tënd të sigurt. Nëse ke ende provë ose periudhë të miratuar aktive, ajo vazhdon sipas afatit të vet.') }}</p>
 @endif
-<p>{{ __('Nuk ka rinovim ose debitim automatik. Pagesat e ndeshjeve mbeten në dorë mes organizatorit dhe portierit.') }}</p>
+<p>{{ __('Nuk ka rinovim ose debitim automatik. Organizatori dhe portieri merren vesh drejtpërdrejt për mënyrën e pagesës dhe shumën. Gjej portier nuk mbledh, proceson apo transferon pagesat për ndeshje.') }}</p>
 @endsection

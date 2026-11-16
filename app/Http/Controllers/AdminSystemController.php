@@ -35,6 +35,8 @@ class AdminSystemController extends Controller
             'settings' => [
                 'registrationEnabled' => PlatformSetting::value('registration_enabled', true),
                 'announcement' => PlatformSetting::value('announcement', ''),
+                'announcementSq' => PlatformSetting::value('announcement_sq', ''),
+                'announcementEn' => PlatformSetting::value('announcement_en', ''),
             ],
             'admins' => $users->map(fn (User $user) => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'createdAt' => $user->created_at->toIso8601String(), 'isSuperAdmin' => $user->isSuperAdmin()]),
             'canManageAdminAccess' => $canManageAdminAccess,
@@ -55,6 +57,8 @@ class AdminSystemController extends Controller
         $data = $request->validate([
             'registration_enabled' => ['required', 'boolean'],
             'announcement' => ['nullable', 'string', 'max:280'],
+            'announcement_sq' => ['nullable', 'string', 'max:280'],
+            'announcement_en' => ['nullable', 'string', 'max:280'],
             'reason' => ['required', 'string', 'min:10', 'max:500'],
         ]);
         $actor = $request->user();
@@ -62,21 +66,37 @@ class AdminSystemController extends Controller
         DB::transaction(function () use ($actor, $data) {
             $lockedActor = User::query()->whereKey($actor->id)->lockForUpdate()->firstOrFail();
             abort_unless($lockedActor->isSuperAdmin() && ! $lockedActor->is_suspended, 403);
-            $settings = PlatformSetting::query()->whereIn('key', ['announcement', 'registration_enabled'])
+            $keys = ['announcement', 'announcement_sq', 'announcement_en', 'registration_enabled'];
+            $settings = PlatformSetting::query()->whereIn('key', $keys)
                 ->orderBy('key')->lockForUpdate()->get()->keyBy('key');
+            // Older admin clients still submit the original single-language field. Keep that
+            // value for compatibility, but never display it publicly without a known locale.
+            $legacyAnnouncement = array_key_exists('announcement', $data)
+                ? trim((string) ($data['announcement'] ?? ''))
+                : (string) ($settings['announcement']->value ?? '');
             $previous = [
                 'registration_enabled' => ($settings['registration_enabled']->value ?? '1') === '1',
-                'announcement' => (string) ($settings['announcement']->value ?? ''),
+                'announcement_sq' => (string) ($settings['announcement_sq']->value ?? ''),
+                'announcement_en' => (string) ($settings['announcement_en']->value ?? ''),
+                'legacy_announcement' => (string) ($settings['announcement']->value ?? ''),
             ];
             $next = [
                 'registration_enabled' => (bool) $data['registration_enabled'],
-                'announcement' => trim((string) ($data['announcement'] ?? '')),
+                'announcement_sq' => array_key_exists('announcement_sq', $data)
+                    ? trim((string) ($data['announcement_sq'] ?? '')) : (string) ($settings['announcement_sq']->value ?? ''),
+                'announcement_en' => array_key_exists('announcement_en', $data)
+                    ? trim((string) ($data['announcement_en'] ?? '')) : (string) ($settings['announcement_en']->value ?? ''),
+                'legacy_announcement' => $legacyAnnouncement,
             ];
-            if ($next['announcement'] === '') $next['announcement'] = '';
             if ($previous === $next) return;
 
-            foreach ($settings as $key => $setting) {
-                $setting->value = $key === 'registration_enabled' ? ($next[$key] ? '1' : '0') : $next[$key];
+            foreach ($keys as $key) {
+                $setting = $settings->get($key) ?? new PlatformSetting(['key' => $key]);
+                $setting->value = match ($key) {
+                    'registration_enabled' => $next[$key] ? '1' : '0',
+                    'announcement' => $legacyAnnouncement,
+                    default => $next[$key],
+                };
                 $setting->save();
             }
             AdminSystemAudit::create([

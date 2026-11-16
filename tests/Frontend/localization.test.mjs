@@ -52,6 +52,56 @@ test('catalogs cover every source key and preserve placeholders', () => {
     if (/[ëçËÇ]/.test(key)) assert.notEqual(english, key, `Untranslated: ${key}`);
   }
 });
+test('FAQ and Contact public copy is complete, translated and free of draft notes', () => {
+  const information = readFileSync(resolve(root, 'resources/js/pages/Information.tsx'), 'utf8');
+  const faq = information.slice(information.indexOf('  faq: {'), information.indexOf('  contact: {'));
+  const contact = information.slice(information.indexOf('  contact: {'), information.indexOf('  privacy: {'));
+  const visibleCopy = `${faq}\n${contact}`;
+  for (const internal of ['draft: true', 'review:', 'DRAFT FOR REVIEW', 'PROJEKT PËR RISHIKIM', 'owner review', 'postal address']) {
+    assert.ok(!visibleCopy.toLowerCase().includes(internal.toLowerCase()), `Public FAQ/Contact contains internal note: ${internal}`);
+  }
+  setLocale('en');
+  assert.equal(t('Pyetje të shpeshta'), 'Frequently Asked Questions');
+  assert.equal(t('A ka moshë minimale për t\'u regjistruar?'), 'Is there a minimum age to register?');
+  assert.match(t('Për të krijuar llogari portieri, duhet të konfirmosh se je të paktën 18 vjeç duke shënuar kutinë e pranimit gjatë regjistrimit. Platforma nuk kërkon datëlindjen dhe nuk e verifikon moshën në mënyrë të pavarur.'), /confirm that you are at least 18/);
+  assert.match(t('Në fund të një profili publik të portierit, mund të dërgosh raport anonim duke zgjedhur arsyen dhe, nëse dëshiron, duke shtuar detaje. Raporti hyn në radhën e shqyrtimit të administratorit. Dërgimi i raportit nuk e pezullon automatikisht profilin.'), /anonymous report.*review queue.*does not automatically suspend/i);
+  assert.match(t('Për pyetje rreth platformës ose privatësisë, kontakto me email. Për një ndeshje, kontakto portierin drejtpërdrejt nga profili i tij publik.'), /contact us by email.*contact the goalkeeper directly/i);
+  setLocale('sq');
+});
+test('all public information page copy and metadata have English translations', () => {
+  const information = readFileSync(resolve(root, 'resources/js/pages/Information.tsx'), 'utf8');
+  const source = ts.createSourceFile('Information.tsx', information, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const documents = source.statements.find(node => ts.isVariableStatement(node)
+    && node.declarationList.declarations.some(declaration => declaration.name.getText(source) === 'documents'));
+  assert.ok(documents, 'Information document catalog exists');
+  function visit(node) {
+    if (ts.isStringLiteral(node) && node.text !== 'bmalazezi@gmail.com') {
+      assert.ok(en[node.text], `Information page copy is missing an EN translation: ${node.text}`);
+      assert.ok(!/rezervo\s*gk|rezervogk/i.test(node.text), `Old brand appears in public copy: ${node.text}`);
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(documents);
+  assert.ok(en['Gjej portier, kontakto drejtpërdrejt me WhatsApp ose telefon për ndeshjen tënde.'], 'Shared page description has an EN translation');
+  assert.ok(information.includes('head-key="description"'), 'Information metadata follows translated document copy');
+});
+test('match-payment and tax wording switch to the requested SQ and EN copy', () => {
+  const paymentSq = 'Organizatori dhe portieri merren vesh drejtpërdrejt për mënyrën e pagesës dhe shumën. Gjej portier nuk mbledh, proceson apo transferon pagesat për ndeshje.';
+  const paymentEn = 'The organiser and goalkeeper agree directly on the payment method and amount. Gjej portier does not collect, process or transfer match payments.';
+  const taxSq = 'Secili portier është përgjegjës për respektimin e detyrimeve tatimore, të regjistrimit dhe detyrimeve të tjera ligjore që zbatohen për aktivitetin dhe të ardhurat e tij. Gjej portier nuk llogarit, mbledh apo paguan tatime në emër të përdoruesve.';
+  const taxEn = 'Each goalkeeper is responsible for complying with applicable tax, registration and other legal obligations arising from their own activities and income. Gjej portier does not calculate, collect or pay taxes on behalf of users.';
+  setLocale('en');
+  assert.equal(t(paymentSq), paymentEn);
+  assert.equal(t(taxSq), taxEn);
+  setLocale('sq');
+  assert.equal(t(paymentSq), paymentSq);
+  assert.equal(t(taxSq), taxSq);
+  for (const file of ['resources/js/pages/Information.tsx', 'resources/js/pages/Home.tsx', 'resources/js/pages/Profile.tsx', 'resources/js/components/KeeperAuthShell.tsx', 'resources/js/pages/Pricing.tsx']) {
+    const text = readFileSync(resolve(root, file), 'utf8');
+    assert.doesNotMatch(text, /paguaj në (?:dorë|fushë)|pagesa(?:t)?[^\"\n]{0,100}në dorë|pay cash|cash payment|pay at the pitch/i, `${file} contains mandatory-cash match wording`);
+  }
+  setLocale('sq');
+});
 test('all explicit UI calls and curated document/option text have translations', () => {
   for (const dir of ['pages', 'components', 'layouts', 'lib', 'types']) {
     for (const file of readdirSync(resolve(root, 'resources/js', dir)).filter(f => /\.tsx?$/.test(f))) {
