@@ -39,3 +39,4 @@ Thumbs.db
 /database/*.sqlite
 /database/*.sqlite-*
 *.sql
+/storage/framework/scheduler-heartbeat
