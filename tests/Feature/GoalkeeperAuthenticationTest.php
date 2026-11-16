@@ -99,6 +99,13 @@ class GoalkeeperAuthenticationTest extends TestCase
         $this->assertSame(['7v7'], User::sole()->goalkeeperProfile->matchFormats->pluck('code')->all());
     }
 
+    public function test_passwords_need_at_least_twelve_characters_like_the_form_says(): void
+    {
+        $this->post('/register', $this->registration(['password' => 'Short1Pass', 'password_confirmation' => 'Short1Pass']))
+            ->assertSessionHasErrors('password');
+        $this->assertDatabaseCount('users', 0);
+    }
+
     public function test_registration_gives_a_readable_unique_profile_link(): void
     {
         $this->post('/register', $this->registration(['name' => 'Ardit Krasniqi']))->assertRedirect('/dashboard');
