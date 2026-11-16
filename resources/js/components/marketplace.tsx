@@ -52,12 +52,14 @@ export function Header({ page, setPage, authenticated, onLogout }: { page: Page;
     <div className="nav-wrap">
       <Logo onClick={() => go("home")} />
       <nav className={open ? "nav-links open" : "nav-links"}>
+        <div className="mobile-lang"><LanguageSwitcher /></div>
         <button className={page === "browse" ? "active" : ""} onClick={() => go("browse")}>{t("Gjej portier")}</button>
         {authenticated ? <button className={page === "dashboard" ? "active" : ""} onClick={() => go("dashboard")}>{t("Paneli i portierit")}</button> : <button className="mobile-account-link" onClick={() => go("login")}>{t("Kyçu")}</button>}
         <div className="mobile-actions"><Button variant="primary" onClick={() => authenticated ? confirmLogout() : go("register")}>{authenticated ? t("Dil") : t("Bëhu portier")}</Button></div>
       </nav>
       <div className="nav-actions">
-        <LanguageSwitcher />
+        <div className="header-lang"><LanguageSwitcher /></div>
+        <Button className="mobile-header-cta" onClick={() => go(authenticated ? "dashboard" : "register")}>{authenticated ? t("Paneli") : t("Bëhu portier")}</Button>
         {!authenticated && <button className="desktop-account-link" onClick={() => go("login")}>{t("Kyçu")}</button>}
         <Button className="desktop-cta" onClick={() => authenticated ? confirmLogout() : go("register")}>{authenticated ? t("Dil") : t("Bëhu portier")}</Button>
         <button className="menu-btn" onClick={() => setOpen(!open)} aria-label={open ? t("Mbyll menynë") : t("Hap menynë")} aria-expanded={open}><Icon name={open ? "close" : "menu"} /></button>
@@ -99,7 +101,7 @@ export function SearchBar({ onSearch, cities, countries, countryId = "", onCount
   return <div className="search-bar">
     {countries && <label><span><Icon name="pin" size={18} /> {t("Vendi")}</span><select value={countryId} onChange={e => onCountryChange?.(e.target.value)}><option value="">{t("Të gjitha vendet")}</option>{countries.map(country => <option key={country.id} value={country.id}>{t(country.name)}</option>)}</select></label>}
     <label><span><Icon name="pin" size={18} /> {t("Qyteti")}</span><select value={cities ? cityId : undefined} defaultValue={cities ? undefined : "Prishtinë"} onChange={e => onCityChange?.(e.target.value)}>{cities ? <><option value="">{t("Të gjitha qytetet")}</option>{visibleCities?.map(city => <option key={city.id} value={city.id}>{city.name}</option>)}</> : <><option>Prishtinë</option><option>Tiranë</option><option>Shkup</option><option>Prizren</option></>}</select></label>
-    <div className="search-date-field"><label htmlFor="match-date"><span><Icon name="calendar" size={18} /> {t("Data e ndeshjes")}</span></label><input id="match-date" aria-label={t("Data e ndeshjes")} type="date" value={date} defaultValue={date === undefined ? dateFromToday(2) : undefined} onChange={event => onDateChange?.(event.target.value)} min={minDate ?? dateFromToday()} max={maxDate} /><span className="date-shortcuts" role="group" aria-label={t("Zgjedh shpejt datën")}><button type="button" className={!date ? "selected" : ""} aria-pressed={!date} onClick={() => onDateChange?.("")}>{t("Çdo datë")}</button><button type="button" className={date === today ? "selected" : ""} aria-pressed={date === today} onClick={() => onDateChange?.(today)}>{t("Sot")}</button><button type="button" className={date === tomorrow ? "selected" : ""} aria-pressed={date === tomorrow} onClick={() => onDateChange?.(tomorrow)}>{t("Nesër")}</button></span></div>
+    <div className="search-date-field"><label htmlFor="match-date"><span><Icon name="calendar" size={18} /> {t("Data e ndeshjes")}</span></label>{date === "" && <span className="date-placeholder" aria-hidden="true">{t("Zgjidh datën")}</span>}<input id="match-date" className={date === "" ? "is-empty" : ""} aria-label={t("Data e ndeshjes")} type="date" value={date} defaultValue={date === undefined ? dateFromToday(2) : undefined} onChange={event => onDateChange?.(event.target.value)} min={minDate ?? dateFromToday()} max={maxDate} /><span className="date-shortcuts" role="group" aria-label={t("Zgjedh shpejt datën")}><button type="button" className={!date ? "selected" : ""} aria-pressed={!date} onClick={() => onDateChange?.("")}>{t("Çdo datë")}</button><button type="button" className={date === today ? "selected" : ""} aria-pressed={date === today} onClick={() => onDateChange?.(today)}>{t("Sot")}</button><button type="button" className={date === tomorrow ? "selected" : ""} aria-pressed={date === tomorrow} onClick={() => onDateChange?.(tomorrow)}>{t("Nesër")}</button></span></div>
     <Button onClick={onSearch}><Icon name="search" size={19} /> {t("Kërko")}</Button>
   </div>;
 }

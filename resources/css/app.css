@@ -346,3 +346,28 @@ footer { background: var(--navy); color: white; padding: 70px max(5vw, 30px) 28p
   .browse-grid .heart { width: 30px; height: 30px; top: 8px; right: 8px; }
   .browse-grid .available-dot { top: 8px; left: 8px; font-size: 9px; padding: 4px 7px; max-width: calc(100% - 48px); }
 }
+
+/* Phones: goalkeeper button visible in the header; language moves into the menu. */
+.mobile-header-cta, .mobile-lang { display: none; }
+@media (max-width: 900px) {
+  .header-lang { display: none; }
+  .mobile-lang { display: block; padding: 4px 0 12px; border-bottom: 1px solid #1e3531; margin-bottom: 6px; }
+  .mobile-header-cta { display: inline-flex; min-height: 40px !important; padding: 0 14px; font-size: 13px; white-space: nowrap; box-shadow: none; }
+}
+@media (max-width: 380px) {
+  .brand-lockup { width: 120px; }
+  .mobile-header-cta { padding: 0 11px; font-size: 12px; }
+}
+
+/* iPhone shows an empty date field with no hint; show one until a date is picked. */
+.search-date-field { position: relative; }
+.date-placeholder { position: absolute; pointer-events: none; color: var(--ink); font-weight: 700; font-size: 15px; margin-top: 7px; }
+.search-date-field input.is-empty { color: transparent; }
+.search-date-field input.is-empty:focus { color: inherit; }
+.search-date-field input.is-empty:focus ~ .date-placeholder, .search-date-field:focus-within .date-placeholder { display: none; }
+
+/* Phones: less empty space above the hero headline. */
+@media (max-width: 640px) {
+  .hero { min-height: 0; padding-bottom: 48px; }
+  .hero-content { padding-top: 120px; }
+}
