@@ -59,6 +59,7 @@ class SuperAdminAccessTest extends TestCase
 
     public function test_admin_pages_send_guests_to_the_admin_login_and_admins_land_in_the_admin_panel(): void
     {
+        config(['admin-security.email_code' => false]); // the emailed code step is covered in AdminTwoFactorTest
         $this->get('/admin')->assertRedirect('/admin/login');
         $this->get('/admin/login')->assertOk()->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->component('Login')->where('admin', true));
 

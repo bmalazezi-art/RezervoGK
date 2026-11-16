@@ -215,6 +215,7 @@ class FreeLaunchTest extends TestCase
 
     public function test_existing_admin_login_cannot_restore_payment_admin_navigation_or_intended_urls(): void
     {
+        config(['admin-security.email_code' => false]); // the emailed code step is covered in AdminTwoFactorTest
         $admin = User::factory()->create(['is_admin' => true, 'password' => 'Free-Launch-QA-12345!']);
         $this->withSession(['url.intended' => route('admin.payments')])->post('/login', ['email' => $admin->email, 'password' => 'Free-Launch-QA-12345!'])->assertRedirect(route('admin.dashboard'));
         $this->get('/')->assertInertia(fn (Assert $page) => $page->where('auth.canReviewPayments', false)->where('freeLaunch', true));

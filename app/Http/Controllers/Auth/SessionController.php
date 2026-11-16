@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\AdminLoginChallenge;
 use App\Support\LaunchModel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,6 +55,15 @@ class SessionController extends Controller
         if (! $user->is_admin && is_string($intended) && str_starts_with((string) parse_url($intended, PHP_URL_PATH), '/admin')) {
             // A goalkeeper who signed in from the admin login goes to their own dashboard, not a 403.
             $request->session()->forget('url.intended');
+        }
+        if (AdminLoginChallenge::required($user)) {
+            // Password was right; admins still need the emailed code before they are signed in.
+            $request->session()->regenerate();
+            if (! app(AdminLoginChallenge::class)->start($request, $user, $request->boolean('remember'))) {
+                throw ValidationException::withMessages(['email' => __('Kodi i verifikimit nuk mund të dërgohej. Provo përsëri pas pak.')]);
+            }
+
+            return to_route('admin.verify');
         }
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();

@@ -383,3 +383,4 @@ footer { background: var(--navy); color: white; padding: 70px max(5vw, 30px) 28p
 /* Admin-verified goalkeeper badge (cards and profile). */
 .verified-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: #e6f5d0; color: #2f5a0f; font-size: 11px; font-weight: 800; vertical-align: middle; white-space: nowrap; }
 .profile-title .verified-badge { margin: 6px 0 4px; }
+.admin-code-input { font-size: 26px !important; letter-spacing: 8px; text-align: center; font-weight: 800; }

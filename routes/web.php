@@ -10,6 +10,7 @@ use App\Http\Controllers\AdminInsightsController;
 use App\Http\Controllers\AdminPaymentController;
 use App\Http\Controllers\AdminSystemController;
 use App\Http\Controllers\AdminUsersController;
+use App\Http\Controllers\Auth\AdminVerificationController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\RegistrationController;
 use App\Http\Controllers\Auth\SessionController;
@@ -54,6 +55,9 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [RegistrationController::class, 'store'])->middleware(['throttle:registration', EnsureRegistrationIsEnabled::class])->name('register.store');
     Route::get('/login', [SessionController::class, 'create'])->name('login');
     Route::get('/admin/login', [SessionController::class, 'createAdmin'])->name('admin.login');
+    Route::get('/admin/verify', [AdminVerificationController::class, 'show'])->name('admin.verify');
+    Route::post('/admin/verify', [AdminVerificationController::class, 'verify'])->middleware('throttle:10,1')->name('admin.verify.store');
+    Route::post('/admin/verify/resend', [AdminVerificationController::class, 'resend'])->middleware('throttle:3,10')->name('admin.verify.resend');
     Route::post('/login', [SessionController::class, 'store'])->middleware('throttle:login')->name('login.store');
     Route::middleware(ProtectRecoveryResponse::class)->group(function () {
         Route::get('/forgot-password', [PasswordController::class, 'request'])->name('password.request');

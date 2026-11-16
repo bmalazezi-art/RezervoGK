@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\User;
+use App\Notifications\AdminLoginCode;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
@@ -84,6 +85,25 @@ class TransactionalMail
             self::recordFailure('password_reset_delivery');
             // A failed delivery must allow a fresh request, not keep an unusable token.
             Password::deleteToken($user);
+        }
+    }
+
+    /** Returns false (and never throws) when the code could not be sent. */
+    public function sendAdminCode(User $user, #[\SensitiveParameter] string $code, int $minutes): bool
+    {
+        try {
+            if ($this->configurationIssue() !== null) {
+                self::recordFailure('admin_code_configuration');
+
+                return false;
+            }
+            $user->notify((new AdminLoginCode($code, $minutes))->locale(app()->getLocale()));
+
+            return true;
+        } catch (Throwable) {
+            self::recordFailure('admin_code_delivery');
+
+            return false;
         }
     }
 }

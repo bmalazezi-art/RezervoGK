@@ -6,7 +6,7 @@ import { navigate, type Page } from "../navigation";
 
 const pages: Record<string, Page> = {
   Home: "home", Browse: "browse", Profile: "profile",
-  Login: "login", ForgotPassword: "forgotPassword", ResetPassword: "forgotPassword",
+  Login: "login", AdminVerify: "login", ForgotPassword: "forgotPassword", ResetPassword: "forgotPassword",
   AdminUsers: "dashboard", AdminUserDetails: "dashboard", AdminGoalkeepers: "dashboard", AdminGoalkeeperDetails: "dashboard", AdminReportDetails: "dashboard", AdminAnalytics: "dashboard", AdminSystem: "dashboard",
   Register: "register", Dashboard: "dashboard", AdminPayments: "dashboard", AdminReports: "dashboard",
 };
