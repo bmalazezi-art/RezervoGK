@@ -80,7 +80,7 @@ export default function Profile({ keeper, calendar, selectedDate, today, maxDate
       <div className="profile-image"><img src={keeper.photo} alt={keeper.name} /></div>
       <div className="profile-copy">
         <div className="profile-title"><div><span className="available-text"><i /> {keeperAvailability(keeper)}</span><h1>{keeper.name}</h1><p><Icon name="pin" size={18} /> {keeperLocation(keeper)}</p></div><button className="round-heart"><Icon name="heart" /></button></div>
-        <div className="profile-stats"><div><strong>{keeper.experienceYears} {t(keeper.experienceYears === 1 ? "vit" : "vite")}</strong><span>{t("Përvojë e deklaruar")}</span></div><div><strong>{keeper.formats.join(" · ")}</strong><span>{t("Formatet e lojës")}</span></div></div>
+        <div className="profile-stats">{keeper.experienceYears > 0 && <div><strong>{keeper.experienceYears} {t(keeper.experienceYears === 1 ? "vit" : "vite")}</strong><span>{t("Përvojë e deklaruar")}</span></div>}<div><strong>{keeper.formats.join(" · ")}</strong><span>{t("Formatet e lojës")}</span></div></div>
         <div className="profile-sharing">
           <div className="profile-share-dropdown" onKeyDown={closeShareMenu}>
             <button ref={shareButton} type="button" className="btn btn-primary profile-share-toggle" aria-expanded={shareMenuOpen} aria-controls="profile-share-options" onClick={() => setShareMenuOpen(open => !open)}><Icon name="share" size={18} /> {t("Shpërndaje profilin")}</button>

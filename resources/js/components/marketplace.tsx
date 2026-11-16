@@ -7,6 +7,7 @@ import { Link } from "@inertiajs/react";
 import { useState } from "react";
 import type { Page } from "../navigation";
 import { dateFromToday } from "../lib/dates";
+import { whatsappMessage } from "../lib/contactMessage";
 import type { Keeper, CityOption, CountryOption } from "../types/goalkeeper";
 
 export const Icon = ({ name, size = 20 }: { name: string; size?: number }) => {
@@ -105,7 +106,7 @@ export function SearchBar({ onSearch, cities, countries, countryId = "", onCount
 
 export function ContactActions({ keeper, compact = false }: { keeper: Keeper; compact?: boolean }) {
   useLocale();
-  const message = encodeURIComponent(t("Tung :goalkeeper_name, të pashë te Gjej portier. Mos je i lirë sot për një ndeshje, për me mbrojt? 😄", { goalkeeper_name: keeper.name }));
+  const message = encodeURIComponent(whatsappMessage(keeper.name, keeper.requestedDate));
   const recordContact = (event: "whatsapp" | "phone") => {
     const xsrf = document.cookie.split("; ").find(cookie => cookie.startsWith("XSRF-TOKEN="))?.slice("XSRF-TOKEN=".length);
     void fetch(`/keepers/${keeper.id}/analytics`, {

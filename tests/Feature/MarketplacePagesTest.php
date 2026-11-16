@@ -83,18 +83,37 @@ class MarketplacePagesTest extends TestCase
         $this->get('/keepers')->assertRedirect('/browse');
     }
 
+    public function test_profiles_have_readable_links_and_old_links_keep_working(): void
+    {
+        $profile = GoalkeeperProfile::firstOrFail();
+        $this->assertMatchesRegularExpression('/^[a-z0-9]+(-[a-z0-9]+)*$/', $profile->slug);
+
+        $this->get('/p/'.$profile->slug)->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('Profile')->where('keeper.id', $profile->id)->where('keeper.url', '/p/'.$profile->slug));
+        $this->get('/keepers/'.$profile->id)->assertOk()->assertInertia(fn (Assert $page) => $page->where('keeper.id', $profile->id));
+        $this->get('/p/no-such-goalkeeper')->assertNotFound();
+    }
+
+    public function test_readable_slugs_stay_unique(): void
+    {
+        $this->assertSame('ardit-krasniqi-2', GoalkeeperProfile::uniqueSlug('Ardit Krasniqi'));
+        $existing = GoalkeeperProfile::where('slug', 'ardit-krasniqi')->firstOrFail();
+        $this->assertSame('ardit-krasniqi', GoalkeeperProfile::uniqueSlug('Ardit Krasniqi', $existing->id));
+        $this->assertSame('portier', GoalkeeperProfile::uniqueSlug('!!!'));
+    }
+
     public function test_public_profile_includes_absolute_share_url_and_open_graph_metadata(): void
     {
         config(['app.url' => 'https://portieri.example']);
         $profile = GoalkeeperProfile::firstOrFail();
         $response = $this->get('/keepers/'.$profile->id)->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('shareUrl', 'https://portieri.example/keepers/'.$profile->id)
+                ->where('shareUrl', 'https://portieri.example/p/'.$profile->slug)
                 ->where('shareTitle', $profile->name.' | Gjej portier')
                 ->has('shareImage'));
         $this->assertMatchesRegularExpression('~^https?://~', $response->viewData('page')['props']['shareImage']);
 
-        $response->assertSee('property="og:url" content="https://portieri.example/keepers/'.$profile->id.'"', false)
+        $response->assertSee('property="og:url" content="https://portieri.example/p/'.$profile->slug.'"', false)
             ->assertSee('property="og:title"', false)
             ->assertSee('property="og:image"', false)
             ->assertSee('name="description"', false);

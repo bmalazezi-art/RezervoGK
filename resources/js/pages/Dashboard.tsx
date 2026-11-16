@@ -13,6 +13,20 @@ import { paymentDate } from "../types/payments";
 import { displayDate } from "../lib/dates";
 import { displayAvailabilityTime, resolveAvailability } from "../lib/availability";
 import type { CalendarDay, CityOption, PublicKeeper } from "../types/goalkeeper";
+import { copyTextToClipboard } from "../lib/profileSharing";
+
+type ChecklistTarget = "profile" | "availability";
+
+/** What a goalkeeper still needs so organisers trust and contact them. */
+export function profileChecklist(keeper: PublicKeeper): { label: string; done: boolean; target: ChecklistTarget }[] {
+  return [
+    { label: "Shto një fotografi", done: Boolean(keeper.photo) && !keeper.photo.includes("keeper-placeholder"), target: "profile" },
+    { label: "Shkruaj një përshkrim (të paktën 40 shkronja)", done: (keeper.bio ?? "").trim().length >= 40, target: "profile" },
+    { label: "Vendos vitet e përvojës", done: (keeper.experienceYears ?? 0) > 0, target: "profile" },
+    { label: "Zgjidh formatet e lojës", done: keeper.formats.length > 0, target: "profile" },
+    { label: "Cakto orarin javor", done: keeper.weeklyHours.length > 0, target: "availability" },
+  ];
+}
 
 type ProfileForm = {
   name: string; city_id: string; price: string; currency: PriceCurrency; phone: string; whatsapp: string; bio: string;
@@ -25,6 +39,16 @@ type DashboardSection = "overview" | "availability" | "profile" | "settings";
 export default function Dashboard({ keeper, analytics, accountEmail, cities, cityId, formats, extraDates, offDates, today, trial = { isEligible: false, remainingDays: 0, startedAt: null, endsAt: null, endsAtLabel: null, status: "not_started" }, access, bankTransfer = { configured: false, bank: { enabled: false, beneficiary: "", bankName: "", account: "", bic: "" } }, payments = [] }: DashboardProps) {
   useLocale();
   const [section, setSection] = useState<DashboardSection>("overview");
+  const [shareStatus, setShareStatus] = useState("");
+  const checklist = profileChecklist(keeper);
+  const checklistDone = checklist.filter(item => item.done).length;
+  const shareProfile = async () => {
+    const url = `${window.location.origin}${keeper.url ?? `/keepers/${keeper.id}`}`;
+    if (typeof navigator.share === "function") {
+      try { await navigator.share({ title: `${keeper.name} | Gjej portier`, url }); return; } catch { /* closed or unsupported: fall back to copying */ }
+    }
+    setShareStatus(await copyTextToClipboard(url) ? t("Linku u kopjua.") : url);
+  };
   const form = useForm<ProfileForm>({ name: keeper.name, city_id: String(cityId), price: keeper.priceAmount, currency: keeper.currency, phone: `+${keeper.phone}`, whatsapp: `+${keeper.whatsapp ?? keeper.phone}`, bio: keeper.bio, experience_years: String(keeper.experienceYears), languages: keeper.languages.join(", "), formats: keeper.formats });
   const passwordForm = useForm({ current_password: "", password: "", password_confirmation: "" });
   const deletionForm = useForm({ confirmation: false });
@@ -46,7 +70,7 @@ export default function Dashboard({ keeper, analytics, accountEmail, cities, cit
     event.preventDefault();
     passwordForm.put("/account/password", { preserveScroll: true, onSuccess: () => passwordForm.reset() });
   };
-  const openProfile = () => router.visit(`/keepers/${keeper.id}`);
+  const openProfile = () => router.visit(keeper.url ?? `/keepers/${keeper.id}`);
   const profileStatus = access.isEligible ? "Aktiv" : "I fshehur";
   const trialTitle = trial.isEligible ? "Prova jote falas është aktive" : trial.status === "expired" ? "Prova falas ka përfunduar" : "Profili nuk është publik";
   const profileEditor = <div className="dashboard-profile-content"><ProfilePhotoEditor keeperId={keeper.id} name={keeper.name} photo={keeper.photo} />
@@ -69,8 +93,9 @@ export default function Dashboard({ keeper, analytics, accountEmail, cities, cit
     <nav className="section dashboard-tabs" aria-label={t("Seksionet e panelit")}>{sections.map(item => <button type="button" key={item.id} className={section === item.id ? "active" : ""} aria-current={section === item.id ? "page" : undefined} onClick={() => setSection(item.id)}>{t(item.label)}</button>)}</nav>
     <section className="section dashboard-section">
       {section === "overview" && <div className="dashboard-overview">
+        {checklistDone < checklist.length && <div className="panel profile-checklist"><div className="panel-head"><div><h2>{t("Plotëso profilin")}</h2><span>{checklistDone}/{checklist.length}</span></div></div><p>{t("Profilet e plota marrin më shumë kontakte nga organizatorët.")}</p><ul>{checklist.map(item => <li key={item.label} className={item.done ? "done" : ""}><Icon name="check" size={16} /><span>{t(item.label)}</span>{!item.done && <button type="button" className="text-link" onClick={() => setSection(item.target)}>{t("Plotëso")}</button>}</li>)}</ul></div>}
         <div className="panel overview-availability"><div className="panel-head"><div><h2>{t("Disponueshmëria e ardhshme")}</h2><span>{keeper.availabilityDates.length} {t("nga 30 ditë")}</span></div></div><p>{t("Orari yt javor përsëritet automatikisht. Përditëso vetëm ditët që ndryshojnë.")}</p><div className="overview-upcoming-list">{keeper.availabilityDates.slice(0, 5).map(date => <button type="button" className="overview-upcoming-date" key={date} onClick={() => setSection("availability")}><strong>{displayDate(date)}</strong><span>{upcomingAvailability(date)}</span></button>)}</div><button className="text-link" onClick={() => setSection("availability")}>{t("Menaxho disponueshmërinë")} <Icon name="arrow" size={16} /></button></div>
-        <div className="panel overview-profile"><div className="overview-profile-heading"><span>{t("STATUSI I PROFILIT")}</span><span className={`overview-status-badge${access.isEligible ? " is-active" : ""}`}>{t(profileStatus)}</span></div><h2>{access.freeLaunch ? t("Shërbim plotësisht falas") : t(trialTitle)}</h2><p>{access.freeLaunch ? (access.isEligible ? t("Profili yt qëndron publik pa pagesë, për sa kohë është i publikuar dhe nuk është i pezulluar.") : t("Profili yt nuk është publik. Mund të hysh dhe të përditësosh të dhënat; pagesa nuk kërkohet.")) : t("Shiko si të shohin ekipet dhe mbaji të dhënat e tua të përditësuara.")}</p>{!access.freeLaunch && trial.isEligible && <p className="overview-profile-note">{t("Prova 30-ditore përfundon më :date.", { date: paymentDate(trial.endsAt) })}</p>}<Button variant="outline" onClick={openProfile} disabled={!access.isEligible}>{t("Shiko profilin publik")}</Button></div>
+        <div className="panel overview-profile"><div className="overview-profile-heading"><span>{t("STATUSI I PROFILIT")}</span><span className={`overview-status-badge${access.isEligible ? " is-active" : ""}`}>{t(profileStatus)}</span></div><h2>{access.freeLaunch ? t("Shërbim plotësisht falas") : t(trialTitle)}</h2><p>{access.freeLaunch ? (access.isEligible ? t("Profili yt qëndron publik pa pagesë, për sa kohë është i publikuar dhe nuk është i pezulluar.") : t("Profili yt nuk është publik. Mund të hysh dhe të përditësosh të dhënat; pagesa nuk kërkohet.")) : t("Shiko si të shohin ekipet dhe mbaji të dhënat e tua të përditësuara.")}</p>{!access.freeLaunch && trial.isEligible && <p className="overview-profile-note">{t("Prova 30-ditore përfundon më :date.", { date: paymentDate(trial.endsAt) })}</p>}<div className="overview-share"><Button variant="outline" onClick={openProfile} disabled={!access.isEligible}>{t("Shiko profilin publik")}</Button><Button onClick={() => void shareProfile()} disabled={!access.isEligible}>{t("Shpërndaje profilin")}</Button></div>{shareStatus && <p className="overview-profile-note" role="status">{shareStatus}</p>}</div>
         <div className="panel overview-analytics"><div className="panel-head"><div><h2>{t("Statistikat e profilit")}</h2></div></div><div className="analytics-metrics">{[[t("Shikime gjithsej"), analytics.totalViews], [t("7 ditët e fundit"), analytics.views7Days], [t("30 ditët e fundit"), analytics.views30Days], [t("Klikime në WhatsApp"), analytics.whatsappClicks], [t("Klikime në telefon"), analytics.phoneClicks]].map(([label, value]) => <div key={label}><strong>{value}</strong><span>{label}</span></div>)}</div>{analytics.totalViews === 0 && analytics.whatsappClicks === 0 && analytics.phoneClicks === 0 && <p className="analytics-empty">{t("Nuk ka ende aktivitet në profil. Statistikat shfaqen kur vizitorët e shohin profilin ose prekin butonat e kontaktit.")}</p>}</div>
         {accountStatus}
       </div>}

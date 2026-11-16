@@ -19,7 +19,7 @@ class HomeController extends Controller
             'cities' => GoalkeeperPricing::cities(),
             'countries' => GoalkeeperPricing::countries(),
             'today' => AvailabilityCalendar::today()->toDateString(),
-            'initialDate' => AvailabilityCalendar::today()->addDays(2)->toDateString(),
+            'initialDate' => '', // "Çdo datë": show every goalkeeper first
             'maxDate' => AvailabilityCalendar::maxDate()->toDateString(),
         ]);
     }

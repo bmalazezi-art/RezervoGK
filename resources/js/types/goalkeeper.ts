@@ -3,6 +3,8 @@ import type { WeeklyHour } from "../components/WeeklyHours";
 
 export interface Keeper {
   id: number;
+  slug?: string;
+  url?: string;
   name: string;
   city: string;
   cityName?: string;

@@ -99,6 +99,15 @@ class GoalkeeperAuthenticationTest extends TestCase
         $this->assertSame(['7v7'], User::sole()->goalkeeperProfile->matchFormats->pluck('code')->all());
     }
 
+    public function test_registration_gives_a_readable_unique_profile_link(): void
+    {
+        $this->post('/register', $this->registration(['name' => 'Ardit Krasniqi']))->assertRedirect('/dashboard');
+
+        $slug = User::sole()->goalkeeperProfile->slug;
+        $this->assertMatchesRegularExpression('/^ardit-krasniqi(-\d+)?$/', $slug);
+        $this->get('/p/'.$slug)->assertOk();
+    }
+
     public function test_registration_offers_five_to_seven_a_side_and_eleven_a_side_but_not_nine(): void
     {
         $this->get('/register')->assertInertia(fn (Assert $page) => $page

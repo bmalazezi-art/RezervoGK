@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RegisterGoalkeeperRequest;
+use App\Models\GoalkeeperProfile;
 use App\Models\MatchFormat;
 use App\Models\User;
 use App\Support\GoalkeeperPricing;
@@ -15,7 +16,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -47,7 +47,7 @@ class RegistrationController extends Controller
                 }
                 $profile = $user->goalkeeperProfile()->create([
                     'name' => $data['name'], 'city_id' => $data['city_id'], 'bio' => $data['bio'],
-                    'slug' => Str::slug($data['name']).'-'.Str::lower(Str::random(12)),
+                    'slug' => GoalkeeperProfile::uniqueSlug($data['name']),
                     'price_cents' => GoalkeeperPricing::minorUnits((string) $data['price']), 'currency' => $data['currency'],
                     'photo_url' => $path ? Storage::disk('public')->url($path) : '/keeper-placeholder.svg',
                     'languages' => ['Shqip'], 'availability_label' => 'Sipas marrëveshjes',

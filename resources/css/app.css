@@ -309,3 +309,10 @@ footer { background: var(--navy); color: white; padding: 70px max(5vw, 30px) 28p
   .format-check label { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 14px; font-size: 14px; }
   .format-check input { width: 18px; height: 18px; }
 }
+
+/* Browse: helpful empty state instead of a bare sentence. */
+.browse-empty { grid-column: 1 / -1; background: white; border: 1px solid var(--line); border-radius: 14px; padding: 28px 22px; text-align: center; }
+.browse-empty h3 { font-size: 18px; margin: 0 0 6px; }
+.browse-empty p { color: var(--muted); font-size: 14px; margin: 0; }
+.browse-empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 18px 0; }
+.browse-empty-invite a { font-weight: 700; text-decoration: underline; }

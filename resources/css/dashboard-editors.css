@@ -288,3 +288,14 @@
   .availability-savebar button { width: auto; min-height: 46px; flex: 0 0 auto; padding: 0 14px; }
   .availability-savebar span { font-size: 9px; }
 }
+
+/* Profile completeness checklist and share actions on the dashboard overview. */
+.profile-checklist { grid-column: 1 / -1; }
+.profile-checklist > p { color: var(--muted); font-size: 13px; margin: 6px 0 14px; }
+.profile-checklist ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.profile-checklist li { display: flex; align-items: center; gap: 10px; font-size: 14px; min-height: 36px; }
+.profile-checklist li svg { flex: 0 0 auto; color: #c3cdc9; }
+.profile-checklist li.done svg { color: #4d8c1a; }
+.profile-checklist li.done span { color: var(--muted); text-decoration: line-through; }
+.profile-checklist li .text-link { margin-left: auto; font-weight: 700; }
+.overview-share { display: flex; flex-wrap: wrap; gap: 10px; }

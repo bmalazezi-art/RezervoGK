@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 class GoalkeeperProfile extends Model
 {
@@ -28,6 +29,24 @@ class GoalkeeperProfile extends Model
             'languages' => 'array', 'rating' => 'float', 'review_count' => 'integer',
             'matches_played' => 'integer', 'is_verified' => 'boolean', 'is_featured' => 'boolean',
         ];
+    }
+
+    /** Readable public link name, e.g. "bajram-malazezi", then "-2", "-3" on clashes. */
+    public static function uniqueSlug(string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($name) ?: 'portier';
+        $base = Str::limit($base, 80, '');
+        $slug = $base;
+        for ($n = 2; static::where('slug', $slug)->when($ignoreId, fn ($q) => $q->whereKeyNot($ignoreId))->exists(); $n++) {
+            $slug = $base.'-'.$n;
+        }
+
+        return $slug;
+    }
+
+    public function publicPath(): string
+    {
+        return '/p/'.$this->slug;
     }
 
     public function scopePubliclyVisible(Builder $query): Builder

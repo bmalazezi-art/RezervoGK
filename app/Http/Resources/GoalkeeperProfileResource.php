@@ -22,6 +22,8 @@ class GoalkeeperProfileResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'slug' => $this->slug,
+            'url' => $this->resource->publicPath(),
             'name' => $this->name,
             'city' => $this->city->name.', '.$this->city->country->name,
             'cityName' => $this->city->name, 'countryName' => $this->city->country->name,

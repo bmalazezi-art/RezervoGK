@@ -10,4 +10,4 @@ export const pageUrls: Record<Page, string> = {
   howItWorks: "/how-it-works", faq: "/faq", contact: "/contact", privacy: "/privacy", terms: "/terms",
 };
 export function navigate(page: Page) { router.visit(pageUrls[page]); }
-export function openKeeper(keeper: Keeper, date?: string) { router.visit(`/keepers/${keeper.id}${date ? `?date=${encodeURIComponent(date)}` : ""}`); }
+export function openKeeper(keeper: Keeper, date?: string) { router.visit(`${keeper.url ?? `/keepers/${keeper.id}`}${date ? `?date=${encodeURIComponent(date)}` : ""}`); }

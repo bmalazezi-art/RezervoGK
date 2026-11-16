@@ -9,8 +9,8 @@ use App\Models\GoalkeeperProfile;
 use App\Models\MatchFormat;
 use App\Support\AvailabilityCalendar;
 use App\Support\GoalkeeperPricing;
-use App\Support\ProfilePhoto;
 use App\Support\ProfileAnalytics;
+use App\Support\ProfilePhoto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -69,6 +69,11 @@ class GoalkeeperController extends Controller
         ]);
     }
 
+    public function showBySlug(Request $request, string $slug, ProfileAnalytics $analytics): Response
+    {
+        return $this->show($request, GoalkeeperProfile::where('slug', $slug)->firstOrFail(), $analytics);
+    }
+
     public function show(Request $request, GoalkeeperProfile $keeper, ProfileAnalytics $analytics): Response
     {
         abort_unless(GoalkeeperProfile::publiclyVisible()->whereKey($keeper->id)->exists(), 404);
@@ -77,13 +82,14 @@ class GoalkeeperController extends Controller
         $keeper->load(['city.country', 'contact', 'matchFormats', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions', 'weeklyHours']);
 
         $appUrl = rtrim(config('app.url'), '/');
-        $profileUrl = $appUrl.route('keepers.show', ['keeper' => $keeper->id], false);
+        $profileUrl = $appUrl.$keeper->publicPath();
         $photoUrl = ProfilePhoto::url($keeper->photo_path, $keeper->photo_url);
         $description = trim($keeper->bio) !== ''
             ? Str::limit(trim($keeper->bio), 220)
             : __('Portier :name nga :city. Shiko profilin dhe kontakto drejtpërdrejt.', ['name' => $keeper->name, 'city' => $keeper->city->name.', '.$keeper->city->country->name]);
 
         $title = $keeper->name.' | Gjej portier';
+
         return Inertia::render('Profile', [
             'keeper' => (new GoalkeeperProfileResource($keeper))->resolve(),
             'shareTitle' => $title,

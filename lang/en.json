@@ -1194,5 +1194,20 @@
   "Dil nga llogaria": "Log out",
   "Qëndro i kyçur": "Stay signed in",
   "Po, dil": "Log out",
-  "Gjej portierë pranë teje dhe pyeti për ndeshjen e radhës. Kontakto direkt, pa llogari, dhe merruni vesh drejtpërdrejt për pagesën.": "Find goalkeepers near you for your next match. Contact them without an account and agree on payment directly with the goalkeeper."
+  "Gjej portierë pranë teje dhe pyeti për ndeshjen e radhës. Kontakto direkt, pa llogari, dhe merruni vesh drejtpërdrejt për pagesën.": "Find goalkeepers near you for your next match. Contact them without an account and agree on payment directly with the goalkeeper.",
+  "Tung :goalkeeper_name, të pashë te Gjej portier. A je i lirë për një ndeshje, për me mbrojt? 😄": "Hey :goalkeeper_name, I saw you on Gjej portier. Are you free for a match, to play goalkeeper? 😄",
+  "Tung :goalkeeper_name, të pashë te Gjej portier. Mos je i lirë nesër për një ndeshje, për me mbrojt? 😄": "Hey :goalkeeper_name, I saw you on Gjej portier. Are you free tomorrow for a match, to play goalkeeper? 😄",
+  "Tung :goalkeeper_name, të pashë te Gjej portier. Mos je i lirë më :date për një ndeshje, për me mbrojt? 😄": "Hey :goalkeeper_name, I saw you on Gjej portier. Are you free on :date for a match, to play goalkeeper? 😄",
+  "Shto një fotografi": "Add a photo",
+  "Shkruaj një përshkrim (të paktën 40 shkronja)": "Write a description (at least 40 characters)",
+  "Vendos vitet e përvojës": "Add your years of experience",
+  "Zgjidh formatet e lojës": "Choose your match formats",
+  "Cakto orarin javor": "Set your weekly hours",
+  "Plotëso profilin": "Complete your profile",
+  "Profilet e plota marrin më shumë kontakte nga organizatorët.": "Complete profiles get more messages from organisers.",
+  "Plotëso": "Complete",
+  "Linku u kopjua.": "Link copied.",
+  "Provo një zonë më të gjerë ose hiq disa filtra.": "Try a wider area or remove some filters.",
+  "Shiko gjithë :country": "See all of :country",
+  "Njeh një portier? Dërgoja linkun": "Know a goalkeeper? Send them the link"
 }

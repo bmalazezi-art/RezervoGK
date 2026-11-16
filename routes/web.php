@@ -1,28 +1,30 @@
 <?php
 
-use App\Http\Controllers\AdminPaymentController;
-use App\Http\Controllers\AdminDashboardController;
-use App\Http\Controllers\AdminAnalyticsController;
-use App\Http\Controllers\AdminUsersController;
-use App\Http\Controllers\AdminGoalkeepersController;
+use App\Http\Controllers\AccountDeletionController;
 use App\Http\Controllers\AccountSettingsController;
+use App\Http\Controllers\AdminAnalyticsController;
+use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminGoalkeeperReportController;
+use App\Http\Controllers\AdminGoalkeepersController;
+use App\Http\Controllers\AdminPaymentController;
+use App\Http\Controllers\AdminSystemController;
+use App\Http\Controllers\AdminUsersController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\RegistrationController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoalkeeperController;
+use App\Http\Controllers\GoalkeeperReportController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ManualPaymentController;
-use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\ProfileAnalyticsController;
-use App\Http\Controllers\GoalkeeperReportController;
-use App\Http\Controllers\AdminGoalkeeperReportController;
-use App\Http\Controllers\AdminSystemController;
+use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\WeeklyHoursController;
-use App\Http\Middleware\ProtectRecoveryResponse;
+use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureRegistrationIsEnabled;
+use App\Http\Middleware\ProtectRecoveryResponse;
 use Illuminate\Support\Facades\Route;
 
 Route::pattern('payment', '[1-9][0-9]*');
@@ -31,6 +33,8 @@ Route::post('/locale', LocaleController::class)->middleware('throttle:60,1')->na
 Route::get('/', HomeController::class)->name('home');
 Route::get('/browse', [GoalkeeperController::class, 'index'])->name('browse');
 Route::redirect('/keepers', '/browse')->name('keepers.index');
+Route::get('/p/{slug}', [GoalkeeperController::class, 'showBySlug'])
+    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')->name('keepers.public');
 Route::get('/keepers/{keeper}', [GoalkeeperController::class, 'show'])
     ->where('keeper', '[1-9][0-9]*')->name('keepers.show');
 Route::post('/keepers/{keeper}/analytics', [ProfileAnalyticsController::class, 'store'])
@@ -57,7 +61,7 @@ Route::middleware('guest')->group(function () {
     });
 });
 
-Route::middleware(['auth', 'auth.session', \App\Http\Middleware\EnsureAccountIsActive::class, 'cache.headers:no_store;private'])->group(function () {
+Route::middleware(['auth', 'auth.session', EnsureAccountIsActive::class, 'cache.headers:no_store;private'])->group(function () {
     Route::post('/payments', [ManualPaymentController::class, 'store'])->middleware('throttle:10,1')->name('payments.store');
     Route::post('/payments/{payment}/submit', [ManualPaymentController::class, 'submit'])->middleware('throttle:10,1')->name('payments.submit');
     Route::get('/payments/{payment}/receipt', [ManualPaymentController::class, 'receipt'])->name('payments.receipt');
@@ -91,7 +95,7 @@ Route::middleware(['auth', 'auth.session', \App\Http\Middleware\EnsureAccountIsA
         Route::patch('/admins/{user}', [AdminSystemController::class, 'updateAdmin'])->whereNumber('user')->middleware('throttle:20,1')->name('admin.access.update');
     });
     Route::get('/dashboard', [DashboardController::class, 'show'])->name('dashboard');
-    Route::delete('/account', \App\Http\Controllers\AccountDeletionController::class)->name('account.destroy');
+    Route::delete('/account', AccountDeletionController::class)->name('account.destroy');
     Route::put('/account/password', [AccountSettingsController::class, 'updatePassword'])->name('account.password.update');
     Route::post('/keepers/{keeper}/photo', [ProfilePhotoController::class, 'update'])
         ->where('keeper', '[1-9][0-9]*')->middleware('throttle:20,1')->name('keepers.photo.update');
