@@ -371,3 +371,11 @@ footer { background: var(--navy); color: white; padding: 70px max(5vw, 30px) 28p
   .hero { min-height: 0; padding-bottom: 48px; }
   .hero-content { padding-top: 120px; }
 }
+
+/* Phones: on login/register the form comes first; the "Porta është e jotja" intro moves below it. */
+@media (max-width: 900px) {
+  .register-page .register-form { order: -1; padding-top: 32px; }
+  .register-page .register-intro { padding-top: 48px; padding-bottom: 48px; }
+  .register-page .register-intro h1 { font-size: 34px; letter-spacing: -1.5px; }
+  .register-page .register-quote { margin-top: 28px; }
+}

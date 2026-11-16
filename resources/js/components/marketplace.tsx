@@ -59,7 +59,7 @@ export function Header({ page, setPage, authenticated, onLogout }: { page: Page;
       </nav>
       <div className="nav-actions">
         <div className="header-lang"><LanguageSwitcher /></div>
-        <Button className="mobile-header-cta" onClick={() => go(authenticated ? "dashboard" : "register")}>{authenticated ? t("Paneli") : t("Bëhu portier")}</Button>
+        <Button className="mobile-header-cta" onClick={() => go(authenticated ? "dashboard" : page === "register" ? "login" : "register")}>{authenticated ? t("Paneli") : page === "register" ? t("Kyçu") : t("Bëhu portier")}</Button>
         {!authenticated && <button className="desktop-account-link" onClick={() => go("login")}>{t("Kyçu")}</button>}
         <Button className="desktop-cta" onClick={() => authenticated ? confirmLogout() : go("register")}>{authenticated ? t("Dil") : t("Bëhu portier")}</Button>
         <button className="menu-btn" onClick={() => setOpen(!open)} aria-label={open ? t("Mbyll menynë") : t("Hap menynë")} aria-expanded={open}><Icon name={open ? "close" : "menu"} /></button>
