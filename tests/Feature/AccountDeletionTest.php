@@ -84,6 +84,33 @@ class AccountDeletionTest extends TestCase
         ]);
     }
 
+    public function test_delete_command_removes_admin_access_then_deletes_after_typed_confirmation(): void
+    {
+        [$user] = $this->goalkeeper();
+        $user->forceFill(['is_admin' => true])->save();
+
+        $this->artisan('account:delete', ['email' => $user->email, '--reason' => 'Owner asked to remove this account.'])
+            ->expectsQuestion('Type the email again to confirm', 'wrong@example.test')
+            ->assertFailed();
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'is_admin' => true]);
+
+        $this->artisan('account:delete', ['email' => strtoupper($user->email), '--reason' => 'Owner asked to remove this account.'])
+            ->expectsQuestion('Type the email again to confirm', $user->email)
+            ->assertSuccessful();
+        $this->assertDatabaseMissing('users', ['id' => $user->id]);
+        $this->assertDatabaseMissing('goalkeeper_profiles', ['user_id' => $user->id]);
+        $this->assertDatabaseHas('admin_system_audits', ['action' => 'admin_revoked', 'target_id' => null]);
+    }
+
+    public function test_delete_command_refuses_the_super_admin_and_needs_a_reason(): void
+    {
+        [$user] = $this->goalkeeper();
+        $this->artisan('account:delete', ['email' => $user->email])->assertExitCode(2);
+        $user->forceFill(['email' => User::SUPER_ADMIN_EMAIL])->save();
+        $this->artisan('account:delete', ['email' => User::SUPER_ADMIN_EMAIL, '--reason' => 'Should never be possible.'])->assertFailed();
+        $this->assertDatabaseHas('users', ['id' => $user->id]);
+    }
+
     public function test_dashboard_hides_deletion_for_the_site_owner_account(): void
     {
         [$user] = $this->goalkeeper();
