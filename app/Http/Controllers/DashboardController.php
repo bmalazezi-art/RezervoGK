@@ -26,9 +26,13 @@ use Throwable;
 
 class DashboardController extends Controller
 {
-    public function show(Request $request, ProfileAnalytics $analytics): Response
+    public function show(Request $request, ProfileAnalytics $analytics): Response|RedirectResponse
     {
         $profile = $request->user()->goalkeeperProfile;
+        if (! $profile && $request->user()->is_admin) {
+            // Admin-only accounts have no goalkeeper dashboard; send them to the admin panel.
+            return redirect()->route('admin.dashboard');
+        }
         abort_unless($profile, 403);
         Gate::authorize('update', $profile);
         $profile->load(['city.country', 'contact', 'matchFormats', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions', 'weeklyHours']);

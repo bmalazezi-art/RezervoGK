@@ -20,7 +20,7 @@ class AdminSystemTest extends TestCase
 
     public function test_system_settings_are_admin_only_validated_audited_and_registration_setting_is_enforced(): void
     {
-        $admin = User::factory()->create(['email' => 'bmalazezi@gmail.com', 'is_admin' => true]);
+        $admin = User::factory()->create(['email' => 'gjejportier@gmail.com', 'is_admin' => true]);
         $otherAdmin = User::factory()->create(['is_admin' => true]);
         $ordinary = User::factory()->create();
 
@@ -57,7 +57,7 @@ class AdminSystemTest extends TestCase
 
     public function test_admin_access_changes_are_audited_and_cannot_self_demote_or_remove_last_admin(): void
     {
-        $admin = User::factory()->create(['email' => 'bmalazezi@gmail.com', 'is_admin' => true]);
+        $admin = User::factory()->create(['email' => 'gjejportier@gmail.com', 'is_admin' => true]);
         $otherAdmin = User::factory()->create(['is_admin' => true]);
         $target = User::factory()->create();
 
@@ -98,7 +98,7 @@ class AdminSystemTest extends TestCase
 
     public function test_admin_can_save_separate_public_announcement_languages(): void
     {
-        $admin = User::factory()->create(['email' => 'bmalazezi@gmail.com', 'is_admin' => true]);
+        $admin = User::factory()->create(['email' => 'gjejportier@gmail.com', 'is_admin' => true]);
 
         $this->actingAs($admin)->patch('/admin/settings', [
             'registration_enabled' => true,
@@ -117,7 +117,7 @@ class AdminSystemTest extends TestCase
         $target = User::factory()->create();
         $this->actingAs($ordinary)->patch('/admin/admins/'.$target->id, ['is_admin' => true, 'reason' => 'Unauthorized permission change'])->assertForbidden();
 
-        $admin = User::factory()->create(['email' => 'bmalazezi@gmail.com', 'is_admin' => true]);
+        $admin = User::factory()->create(['email' => 'gjejportier@gmail.com', 'is_admin' => true]);
         $this->actingAs($admin)->patch('/admin/admins/'.$target->id, ['is_admin' => true, 'reason' => 'short'])->assertSessionHasErrors('reason');
         $this->assertFalse($target->fresh()->is_admin);
         $this->assertDatabaseCount('admin_system_audits', 0);
@@ -125,7 +125,7 @@ class AdminSystemTest extends TestCase
 
     public function test_admin_can_search_for_eligible_accounts_outside_the_recent_candidate_window(): void
     {
-        $admin = User::factory()->create(['email' => 'bmalazezi@gmail.com', 'is_admin' => true]);
+        $admin = User::factory()->create(['email' => 'gjejportier@gmail.com', 'is_admin' => true]);
         $older = User::factory()->create(['email' => 'older-candidate@example.test']);
         User::factory()->count(101)->create();
 

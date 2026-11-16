@@ -24,7 +24,7 @@ class AdminDashboardTest extends TestCase
         $profile->save();
         $profile->reports()->create(['reason' => 'inaccurate', 'status' => 'open']);
 
-        $this->get('/admin')->assertRedirect('/login');
+        $this->get('/admin')->assertRedirect('/admin/login');
         $this->actingAs(User::factory()->create())->get('/admin')->assertForbidden();
 
         $admin = User::factory()->create(['is_admin' => true]);

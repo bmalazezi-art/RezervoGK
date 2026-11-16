@@ -6,10 +6,14 @@ use App\Models\AdminSystemAudit;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 
 class DesignateSuperAdmin extends Command
 {
-    protected $signature = 'admin:designate-super-admin {--reason= : Required reason recorded in the administrator audit log}';
+    private bool $created = false;
+
+    protected $signature = 'admin:designate-super-admin {--reason= : Required reason recorded in the administrator audit log} {--create : Create the Super Admin account (no goalkeeper profile) if it does not exist and email a password setup link}';
 
     protected $description = 'Grant administrator access to the configured Super Admin account without creating users';
 
@@ -27,6 +31,19 @@ class DesignateSuperAdmin extends Command
                 ->whereRaw('LOWER(TRIM(email)) = ?', [User::SUPER_ADMIN_EMAIL])
                 ->orderBy('id')->lockForUpdate()->limit(2)->get();
 
+            if ($matches->isEmpty() && $this->option('create')) {
+                // Random unusable password; the owner sets their own through the emailed reset link.
+                $created = new User;
+                $created->forceFill([
+                    'name' => 'Gjej portier Admin',
+                    'email' => User::SUPER_ADMIN_EMAIL,
+                    'password' => Str::random(64),
+                    'email_verified_at' => now(),
+                    'is_admin' => false,
+                ])->save();
+                $matches = collect([$created]);
+                $this->created = true;
+            }
             if ($matches->isEmpty()) {
                 return ['status' => 'missing'];
             }
@@ -71,6 +88,11 @@ class DesignateSuperAdmin extends Command
             $this->error('Multiple accounts match the normalized Super Admin email. No account was changed.');
 
             return self::FAILURE;
+        }
+
+        if ($this->created) {
+            Password::sendResetLink(['email' => User::SUPER_ADMIN_EMAIL]);
+            $this->info('Created the Super Admin account. A password setup link was emailed to the Super Admin address.');
         }
 
         $this->info($result['status'] === 'promoted'

@@ -52,6 +52,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/register', [RegistrationController::class, 'create'])->middleware(EnsureRegistrationIsEnabled::class)->name('register');
     Route::post('/register', [RegistrationController::class, 'store'])->middleware(['throttle:registration', EnsureRegistrationIsEnabled::class])->name('register.store');
     Route::get('/login', [SessionController::class, 'create'])->name('login');
+    Route::get('/admin/login', [SessionController::class, 'createAdmin'])->name('admin.login');
     Route::post('/login', [SessionController::class, 'store'])->middleware('throttle:login')->name('login.store');
     Route::middleware(ProtectRecoveryResponse::class)->group(function () {
         Route::get('/forgot-password', [PasswordController::class, 'request'])->name('password.request');

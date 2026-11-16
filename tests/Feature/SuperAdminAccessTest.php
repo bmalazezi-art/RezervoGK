@@ -19,7 +19,7 @@ class SuperAdminAccessTest extends TestCase
 
     public function test_designation_command_grants_only_matching_account_and_is_idempotent(): void
     {
-        $superAdmin = User::factory()->create(['email' => ' BmALaZezi@Gmail.com ', 'is_admin' => false]);
+        $superAdmin = User::factory()->create(['email' => ' GjEjPortier@Gmail.com ', 'is_admin' => false]);
         $other = User::factory()->create(['email' => 'someone-else@example.test', 'is_admin' => false]);
 
         $this->artisan('admin:designate-super-admin', ['--reason' => 'Initial administrator designation.'])->assertSuccessful();
@@ -41,9 +41,45 @@ class SuperAdminAccessTest extends TestCase
         $this->assertSame(0, AdminSystemAudit::count());
     }
 
+    public function test_create_option_makes_a_profile_free_super_admin_and_emails_a_setup_link(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        config(['transactional-mail.enabled' => true, 'mail.default' => 'array', 'mail.from.address' => 'no-reply@gjejportier.online', 'app.url' => 'https://gjejportier.online']);
+
+        $this->artisan('admin:designate-super-admin', ['--reason' => 'Owner admin account on the Droplet.', '--create' => true])->assertSuccessful();
+
+        $admin = User::where('email', User::SUPER_ADMIN_EMAIL)->sole();
+        $this->assertTrue($admin->is_admin);
+        $this->assertNull($admin->goalkeeperProfile);
+        \Illuminate\Support\Facades\Notification::assertSentTo($admin, \Illuminate\Auth\Notifications\ResetPassword::class);
+
+        $this->artisan('admin:designate-super-admin', ['--reason' => 'Running it again is harmless.', '--create' => true])->assertSuccessful();
+        $this->assertSame(1, User::where('email', User::SUPER_ADMIN_EMAIL)->count());
+    }
+
+    public function test_admin_pages_send_guests_to_the_admin_login_and_admins_land_in_the_admin_panel(): void
+    {
+        $this->get('/admin')->assertRedirect('/admin/login');
+        $this->get('/admin/login')->assertOk()->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->component('Login')->where('admin', true));
+
+        $admin = User::factory()->create(['email' => User::SUPER_ADMIN_EMAIL, 'is_admin' => true, 'password' => 'Admin-Password-123']);
+        $this->get('/admin/login');
+        $this->post('/login', ['email' => $admin->email, 'password' => 'Admin-Password-123'])->assertRedirect(route('admin.dashboard'));
+        auth()->logout();
+        $this->flushSession();
+
+        $this->actingAs($admin)->get('/dashboard')->assertRedirect(route('admin.dashboard'));
+        auth()->logout();
+
+        $keeper = User::factory()->create(['is_admin' => false, 'password' => 'Keeper-Password-123']);
+        $this->get('/admin/login');
+        $response = $this->post('/login', ['email' => $keeper->email, 'password' => 'Keeper-Password-123']);
+        $this->assertStringNotContainsString('/admin', $response->headers->get('Location'));
+    }
+
     public function test_only_designated_super_admin_can_manage_admin_access(): void
     {
-        $superAdmin = User::factory()->create(['email' => 'bmalazezi@gmail.com', 'is_admin' => true]);
+        $superAdmin = User::factory()->create(['email' => 'gjejportier@gmail.com', 'is_admin' => true]);
         $admin = User::factory()->create(['is_admin' => true]);
         $target = User::factory()->create();
 
@@ -67,7 +103,7 @@ class SuperAdminAccessTest extends TestCase
 
     public function test_super_admin_identity_cannot_be_suspended_or_deleted_even_if_admin_flag_is_missing(): void
     {
-        $superAdmin = User::factory()->create(['email' => 'BMALAZEZI@GMAIL.COM', 'is_admin' => false]);
+        $superAdmin = User::factory()->create(['email' => 'GJEJPORTIER@GMAIL.COM', 'is_admin' => false]);
         $admin = User::factory()->create(['is_admin' => true]);
 
         $this->actingAs($admin)->patch('/admin/users/'.$superAdmin->id.'/suspension', [

@@ -12,7 +12,8 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    public const SUPER_ADMIN_EMAIL = 'bmalazezi@gmail.com';
+    public const SUPER_ADMIN_EMAIL = 'gjejportier@gmail.com';
+
     public const CURRENT_POLICY_VERSION = '2026-10-29';
 
     /** @use HasFactory<UserFactory> */

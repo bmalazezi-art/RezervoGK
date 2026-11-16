@@ -1221,5 +1221,7 @@
   "Shtete: Kosovë, Shqipëri, Maqedoni e Veriut": "Countries: Kosovo, Albania, North Macedonia",
   "Paneli": "Dashboard",
   "Zgjidh datën": "Pick a date",
-  "Kjo është llogaria e administratorit kryesor të faqes, prandaj nuk mund të fshihet nga paneli. Kështu faqja nuk mbetet pa administrator.": "This is the site's main administrator account, so it can't be deleted from the dashboard. This keeps the site from being left without an administrator."
+  "Kjo është llogaria e administratorit kryesor të faqes, prandaj nuk mund të fshihet nga paneli. Kështu faqja nuk mbetet pa administrator.": "This is the site's main administrator account, so it can't be deleted from the dashboard. This keeps the site from being left without an administrator.",
+  "Kyçu si administrator": "Administrator sign in",
+  "Vetëm për administratorët e Gjej portier.": "For Gjej portier administrators only."
 }

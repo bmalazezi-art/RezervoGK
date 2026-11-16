@@ -21,7 +21,7 @@ class AdminAnalyticsTest extends TestCase
 
     public function test_analytics_requires_existing_admin_authorization_and_validates_filters(): void
     {
-        $this->get('/admin/analytics')->assertRedirect('/login');
+        $this->get('/admin/analytics')->assertRedirect('/admin/login');
         $this->actingAs(User::factory()->create())->get('/admin/analytics')->assertForbidden();
         $this->actingAs(User::factory()->create(['is_admin' => true]))
             ->get('/admin/analytics?period=custom&date_from=2026-10-20&country_id=999999')->assertSessionHasErrors('country_id');

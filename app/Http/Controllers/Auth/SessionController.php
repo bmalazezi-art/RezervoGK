@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Support\LaunchModel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -18,6 +18,14 @@ class SessionController extends Controller
     public function create(): Response
     {
         return Inertia::render('Login');
+    }
+
+    public function createAdmin(Request $request): Response
+    {
+        // Admins land in the admin panel after signing in from here.
+        $request->session()->put('url.intended', route('admin.dashboard'));
+
+        return Inertia::render('Login', ['admin' => true]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -42,6 +50,11 @@ class SessionController extends Controller
         if ($user->is_suspended) {
             throw ValidationException::withMessages(['email' => __('Llogaria juaj është pezulluar. Ju lutemi kontaktoni mbështetjen nëse mendoni se ky është një gabim.')]);
         }
+        $intended = $request->session()->get('url.intended');
+        if (! $user->is_admin && is_string($intended) && str_starts_with((string) parse_url($intended, PHP_URL_PATH), '/admin')) {
+            // A goalkeeper who signed in from the admin login goes to their own dashboard, not a 403.
+            $request->session()->forget('url.intended');
+        }
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
         // Drop signed-out pages from browser history so Back cannot show the
@@ -52,6 +65,10 @@ class SessionController extends Controller
             $intended = $request->session()->get('url.intended');
             if (is_string($intended) && LaunchModel::paymentPath((string) parse_url($intended, PHP_URL_PATH))) {
                 $request->session()->forget('url.intended');
+            }
+
+            if ($request->user()->is_admin) {
+                return redirect()->intended(route('admin.dashboard'));
             }
 
             return redirect()->intended(route($request->user()->goalkeeperProfile ? 'dashboard' : 'home'));

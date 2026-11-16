@@ -321,7 +321,7 @@ class ManualBankPaymentTest extends TestCase
         $this->assertFalse($this->owner->fresh()->is_admin);
         $this->post('/logout');
         $this->post('/payments')->assertRedirect('/login');
-        $this->get('/admin/payments')->assertRedirect('/login');
+        $this->get('/admin/payments')->assertRedirect('/admin/login');
         $this->assertDatabaseCount('manual_payments', 0);
     }
 
