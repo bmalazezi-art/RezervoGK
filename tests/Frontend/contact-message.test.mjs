@@ -34,7 +34,9 @@ test('WhatsApp message follows the searched date', () => {
   assert.match(whatsappMessage('Ardit', '2026-11-17', '2026-11-16'), /i lirë nesër/);
   assert.match(whatsappMessage('Ardit', '2026-11-30', '2026-11-16'), /i lirë më 30\.11\.2026/);
   assert.match(whatsappMessage('Ardit', '2026-12-01', '2026-11-30'), /i lirë nesër/);
+  assert.doesNotMatch(whatsappMessage('Ardit', null, '2026-11-16'), /\p{Extended_Pictographic}/u);
   setLocale('en');
   assert.match(whatsappMessage('Ardit', '2026-11-30', '2026-11-16'), /free on 30\/11\/2026/);
+  for (const date of [null, '2026-11-16', '2026-11-17', '2026-11-30']) assert.doesNotMatch(whatsappMessage('Ardit', date, '2026-11-16'), /\p{Extended_Pictographic}/u);
   setLocale('sq');
 });
