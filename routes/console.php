@@ -3,6 +3,7 @@
 use App\Support\LaunchModel;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
@@ -17,4 +18,4 @@ if (! LaunchModel::isFree()) {
 Schedule::command('account-deletion:cleanup-files')->everyMinute()->withoutOverlapping(5);
 
 // Heartbeat so Admin > System health can show that the scheduler is running.
-Schedule::call(fn () => @touch(storage_path('framework/scheduler-heartbeat')))->everyMinute()->name('scheduler-heartbeat');
+Schedule::call(fn () => Cache::forever('admin:scheduler-heartbeat', now()->getTimestamp()))->everyMinute()->name('scheduler-heartbeat');

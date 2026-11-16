@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Support\TransactionalMail;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -49,8 +50,8 @@ class AdminHealthController extends Controller
 
     private function scheduler(): array
     {
-        $file = storage_path('framework/scheduler-heartbeat');
-        $last = is_file($file) ? CarbonImmutable::createFromTimestamp((int) filemtime($file)) : null;
+        $stamp = Cache::get('admin:scheduler-heartbeat');
+        $last = is_numeric($stamp) ? CarbonImmutable::createFromTimestamp((int) $stamp) : null;
 
         return ['ok' => $last !== null && $last->greaterThan(now()->subMinutes(5)), 'lastRunAt' => $last?->toIso8601String()];
     }

@@ -74,7 +74,7 @@ class AdminToolsTest extends TestCase
         $status = tempnam(sys_get_temp_dir(), 'backup');
         file_put_contents($status, json_encode(['finished_at' => now()->subHours(3)->toIso8601String(), 'bytes' => 75000, 'kept_days' => 3]));
         config(['admin-security.backup_status_file' => $status]);
-        touch(storage_path('framework/scheduler-heartbeat'));
+        \Illuminate\Support\Facades\Cache::forever('admin:scheduler-heartbeat', now()->getTimestamp());
 
         $this->actingAs($this->admin)->get('/admin/health')->assertForbidden();
         $this->actingAs($this->owner)->get('/admin/health')->assertOk()->assertInertia(fn (Assert $page) => $page->component('AdminHealth')
