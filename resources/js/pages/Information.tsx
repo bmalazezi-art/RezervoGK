@@ -1,8 +1,9 @@
 import { t, useLocale } from "../i18n";
 import { Head, Link } from "@inertiajs/react";
+import { SOCIAL_LINKS } from "../components/marketplace";
 
 type PageKey = "howItWorks" | "faq" | "contact" | "privacy" | "terms";
-type Section = { title: string; paragraphs: string[]; email?: string };
+type Section = { title: string; paragraphs: string[]; email?: string; social?: boolean };
 type Document = { title: string; intro: string; sections: Section[] };
 
 const documents: Record<PageKey, Document> = {
@@ -41,6 +42,7 @@ const documents: Record<PageKey, Document> = {
     intro: "Për pyetje rreth platformës ose privatësisë, kontakto me email. Për një ndeshje, kontakto portierin drejtpërdrejt nga profili i tij publik.",
     sections: [
       { title: "Mbështetja dhe privatësia", paragraphs: ["Operatori i platformës është Bajram Malazezi, individ në Kosovë. Për mbështetje, privatësi ose kërkesa lidhur me të dhënat, dërgo email në:"], email: "gjejportier@gmail.com" },
+      { title: "Na ndiq", paragraphs: ["Lajmet, portierët e rinj dhe njoftimet i postojmë në Facebook dhe Instagram."], social: true },
       { title: "Raporto një profil", paragraphs: ["Në fund të një profili publik të portierit, mund të dërgosh raport anonim duke zgjedhur arsyen dhe, nëse dëshiron, duke shtuar detaje. Raporti hyn në radhën e shqyrtimit të administratorit. Dërgimi i raportit nuk e pezullon automatikisht profilin."] },
       { title: "Pyetje të përgjithshme dhe privatësia", paragraphs: ["Për mbështetje të platformës, pyetje privatësie ose kërkesa për të dhënat e tua, shkruaj në email-in e publikuar më sipër."] },
       { title: "Kontakti për ndeshje dhe pagesa", paragraphs: ["Për të rënë dakord për një ndeshje, kontakto portierin përmes telefonit ose WhatsApp-it në profilin publik. Platforma nuk krijon rezervime automatike. Gjatë nisjes falas, përdorimi i platformës është falas.", "Organizatori dhe portieri merren vesh drejtpërdrejt për mënyrën e pagesës dhe shumën. Gjej portier nuk mbledh, proceson apo transferon pagesat për ndeshje."] },
@@ -88,7 +90,7 @@ export default function Information({ pageKey }: { pageKey: PageKey }) {
   return <main className="page-main dashboard-page information-page policy-page"><Head title={t(document.title)}><meta head-key="description" name="description" content={t(document.intro)} /></Head>
     <div className="section dash-top"><div><span>{pageKey === "privacy" || pageKey === "terms" ? t("POLITIKAT") : t("NDIHMË PËR PËRDORUESIT")}</span><h1>{t(document.title)}</h1><p>{t(document.intro)}</p></div></div>
     <section className="section information-content policy-content">
-      {document.sections.map(section => <article className="panel information-section policy-section" key={t(section.title)}><h2>{t(section.title)}</h2>{section.paragraphs.map(paragraph => <p key={t(paragraph)}>{t(paragraph)}</p>)}{section.email && <p><a href={`mailto:${section.email}`}>{section.email}</a></p>}</article>)}
+      {document.sections.map(section => <article className="panel information-section policy-section" key={t(section.title)}><h2>{t(section.title)}</h2>{section.paragraphs.map(paragraph => <p key={t(paragraph)}>{t(paragraph)}</p>)}{section.email && <p><a href={`mailto:${section.email}`}>{section.email}</a></p>}{section.social && <p className="information-social">{SOCIAL_LINKS.map((link, index) => <span key={link.name}>{index > 0 && " · "}<a href={link.href} target="_blank" rel="noopener noreferrer">{link.name}</a></span>)}</p>}</article>)}
       <nav className="chips information-nav" aria-label={t("Faqet e ndihmës dhe politikat")}><Link href="/how-it-works">{t("Si funksionon")}</Link><Link href="/faq">{t("Pyetje të shpeshta")}</Link><Link href="/contact">{t("Kontakti")}</Link><Link href="/privacy">{t("Politika e privatësisë")}</Link><Link href="/terms">{t("Kushtet e përdorimit")}</Link></nav>
     </section>
   </main>;

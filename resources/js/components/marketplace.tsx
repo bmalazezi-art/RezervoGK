@@ -30,6 +30,8 @@ export const Icon = ({ name, size = 20 }: { name: string; size?: number }) => {
     upload: <><path d="M12 16V4m-5 5 5-5 5 5" /><path d="M5 15v4h14v-4" /></>,
     bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M10 21h4" /></>,
     phone: <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.7 2Z" />,
+    instagram: <><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r=".6" fill="currentColor" /></>,
+    facebook: <path d="M14 8h3V4h-3a4 4 0 0 0-4 4v3H7v4h3v6h4v-6h3l1-4h-4V8Z" />,
     whatsapp: <><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.8 8.8 0 0 1-3.7-.9L3 20.5l1.5-5.1a8.5 8.5 0 1 1 16.5-3.9Z" /><path d="M8.3 7.8c.2-.5.5-.5.8-.5h.5c.2 0 .4 0 .6.5l.8 1.8c.1.3.1.5-.1.7l-.7.8c-.2.2-.3.4-.1.7.5 1 1.2 1.8 2.1 2.4.8.5 1.4.7 1.8.8.3.1.5.1.7-.1l.9-1.1c.2-.3.5-.3.7-.2l2 .9c.3.1.4.2.4.4 0 .2 0 1.1-.5 1.7-.5.6-1.3 1-2.2 1" /></>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
@@ -38,6 +40,18 @@ export const Icon = ({ name, size = 20 }: { name: string; size?: number }) => {
 export const Button = ({ children, variant = "primary", className = "", onClick, type = "button", disabled = false }: { children: React.ReactNode; variant?: "primary" | "dark" | "outline" | "ghost"; className?: string; onClick?: () => void; type?: "button" | "submit"; disabled?: boolean }) => (
   <button type={type} disabled={disabled} className={`btn btn-${variant} ${className}`} onClick={onClick}>{children}</button>
 );
+
+export const SOCIAL_LINKS = [
+  { name: "Facebook", icon: "facebook", href: "https://www.facebook.com/profile.php?id=61569579000810" },
+  { name: "Instagram", icon: "instagram", href: "https://www.instagram.com/gjej_portier/" },
+] as const;
+
+export function SocialLinks({ className = "" }: { className?: string }) {
+  useLocale();
+  return <nav className={`social-links ${className}`} aria-label={t("Rrjetet sociale")}>
+    {SOCIAL_LINKS.map(link => <a key={link.name} href={link.href} target="_blank" rel="noopener noreferrer" aria-label={`${t("Gjej portier në")} ${link.name}`} title={link.name}><Icon name={link.icon} size={18} /></a>)}
+  </nav>;
+}
 
 export function Header({ page, setPage, authenticated, onLogout }: { page: Page; setPage: (p: Page) => void; authenticated: boolean; onLogout: () => void }) {
   useLocale();
@@ -141,6 +155,6 @@ export function KeeperCard({ keeper, onOpen, requestedDate }: { keeper: Keeper; 
 
 export function Footer({ setPage }: { setPage: (p: Page) => void }) {
   useLocale();
-  return <footer><div className="footer-top"><div><Logo onClick={() => setPage("home")} /><p>{t("Futboll më i mirë, një portier në një kohë.")}</p></div><div><strong>{t("PLATFORMA")}</strong><button onClick={() => setPage("browse")}>{t("Gjej portier")}</button><button onClick={() => setPage("register")}>{t("Bëhu portier")}</button></div><div><strong>{t("MBËSHTETJA")}</strong><button onClick={() => setPage("howItWorks")}>{t("Si funksionon")}</button><button onClick={() => setPage("faq")}>{t("Pyetje të shpeshta")}</button><button onClick={() => setPage("contact")}>{t("Kontakti")}</button></div><div className="footer-country"><strong>{t("AKTIV NË")}</strong><span>{t("🇽🇰 Kosovë")}</span><span>{t("🇦🇱 Shqipëri")}</span><span>{t("🇲🇰 Maqedoni e Veriut")}</span></div><div><strong>{t("POLITIKAT")}</strong><Link className="text-inherit no-underline" href="/privacy">{t("Politika e privatësisë")}</Link><Link className="text-inherit no-underline" href="/terms">{t("Kushtet e përdorimit")}</Link></div></div><div className="footer-bottom"><span>© {new Date().getFullYear()} {t("Gjej portier. Të gjitha të drejtat e rezervuara.")}</span></div></footer>;
+  return <footer><div className="footer-top"><div><Logo onClick={() => setPage("home")} /><p>{t("Futboll më i mirë, një portier në një kohë.")}</p><SocialLinks className="footer-social" /></div><div><strong>{t("PLATFORMA")}</strong><button onClick={() => setPage("browse")}>{t("Gjej portier")}</button><button onClick={() => setPage("register")}>{t("Bëhu portier")}</button></div><div><strong>{t("MBËSHTETJA")}</strong><button onClick={() => setPage("howItWorks")}>{t("Si funksionon")}</button><button onClick={() => setPage("faq")}>{t("Pyetje të shpeshta")}</button><button onClick={() => setPage("contact")}>{t("Kontakti")}</button></div><div className="footer-country"><strong>{t("AKTIV NË")}</strong><span>{t("🇽🇰 Kosovë")}</span><span>{t("🇦🇱 Shqipëri")}</span><span>{t("🇲🇰 Maqedoni e Veriut")}</span></div><div><strong>{t("POLITIKAT")}</strong><Link className="text-inherit no-underline" href="/privacy">{t("Politika e privatësisë")}</Link><Link className="text-inherit no-underline" href="/terms">{t("Kushtet e përdorimit")}</Link></div></div><div className="footer-bottom"><span>© {new Date().getFullYear()} {t("Gjej portier. Të gjitha të drejtat e rezervuara.")}</span></div></footer>;
 }
 
