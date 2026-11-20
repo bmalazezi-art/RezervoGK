@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\City;
 use App\Models\Country;
+use App\Models\GoalkeeperProfile;
 
 class GoalkeeperPricing
 {
@@ -69,5 +70,21 @@ class GoalkeeperPricing
     public static function filterDefault(string $currency): int
     {
         return $currency === 'EUR' ? 15 : 10000;
+    }
+
+    /**
+     * Default "max price" per currency for the browse filter: the usual default, raised to the highest published
+     * price so that no public profile is hidden until the visitor lowers the limit themselves.
+     *
+     * @return array<string, int>
+     */
+    public static function filterLimits(): array
+    {
+        $highest = GoalkeeperProfile::publiclyVisible()->groupBy('currency')
+            ->selectRaw('currency, MAX(price_cents) as highest')->pluck('highest', 'currency');
+
+        return collect(self::CURRENCIES)->mapWithKeys(fn (string $currency) => [
+            $currency => max(self::filterDefault($currency), (int) ceil(((int) ($highest[$currency] ?? 0)) / 100)),
+        ])->all();
     }
 }

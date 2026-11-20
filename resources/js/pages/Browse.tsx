@@ -14,11 +14,13 @@ type BrowseProps = {
   filters: BrowseFilters;
   today: string;
   maxDate: string;
+  priceLimits?: Partial<Record<PriceCurrency, number>>;
   pagination?: { page: number; lastPage: number; total: number; perPage: number };
 };
 
-export default function Browse({ keepers, cities, countries, formats, filters, today, maxDate, pagination }: BrowseProps) {
+export default function Browse({ keepers, cities, countries, formats, filters, today, maxDate, priceLimits, pagination }: BrowseProps) {
   useLocale();
+  const priceLimit = (currency: PriceCurrency) => priceLimits?.[currency] ?? defaultPriceLimit(currency);
   const [draft, setDraft] = useState(filters);
   const [priceInput, setPriceInput] = useState(String(filters.max_price));
   const [searchCountry, setSearchCountry] = useState(filters.country_id);
@@ -45,17 +47,17 @@ export default function Browse({ keepers, cities, countries, formats, filters, t
   const scopePrice = (cityId: string, countryId = "") => {
     const scope = countries.find(country => String(country.id) === countryId) ?? cities.find(city => String(city.id) === cityId);
     const currency = scope?.defaultCurrency ?? "EUR";
-    return { currency, max_price: defaultPriceLimit(currency) };
+    return { currency, max_price: priceLimit(currency) };
   };
-  const reset = () => { setSearchCountry(""); setSearchCity(""); apply({ city_id: "", country_id: "", format: "", max_price: 15, currency: "EUR", date: "" }); };
+  const reset = () => { setSearchCountry(""); setSearchCity(""); apply({ city_id: "", country_id: "", format: "", max_price: priceLimit("EUR"), currency: "EUR", date: "" }); };
   const selectedCity = cities.find(city => String(city.id) === filters.city_id);
   const selectedCountry = countries.find(country => String(country.id) === filters.country_id);
 
   const filterFields = <>
     <div className="filter-title"><h3>{t("Filtrat")}</h3><button onClick={reset}>{t("Pastro")}</button></div>
     <div className="filter-group"><span>{t("Formati i lojës")}</span><div className="chips">{["", ...formats].map(format => <button className={draft.format === format ? "selected" : ""} onClick={() => apply({ format })} key={format}>{format || t("Të gjitha")}</button>)}</div></div>
-    <label>{t("Monedha e çmimit")}<select value={draft.currency} onChange={e => { const currency = e.target.value as PriceCurrency; apply({ currency, max_price: defaultPriceLimit(currency) }); }}>{(selectedCountry?.currencies ?? selectedCity?.currencies ?? priceCurrencies).map(currency => <option key={currency} value={currency}>{currency}</option>)}</select></label>
-    <label className="range-label"><span>{t("Çmimi maksimal")} <strong>{formatPrice(String(draft.max_price), draft.currency)}</strong></span><input type="range" min="0" max={Math.max(defaultPriceLimit(draft.currency), draft.max_price)} step="0.01" value={draft.max_price} onChange={e => apply({ max_price: Number(e.target.value) })} /><input aria-label={t("Çmimi maksimal në :currency", { currency: draft.currency })} type="number" min="0" max="1000000" step="0.01" value={priceInput} onChange={e => setPriceInput(e.target.value)} onBlur={e => { if (e.target.value && e.target.validity.valid) apply({ max_price: Number(e.target.value) }); else setPriceInput(String(draft.max_price)); }} onKeyDown={e => { if (e.key === "Enter" && e.currentTarget.value && e.currentTarget.reportValidity()) apply({ max_price: Number(e.currentTarget.value) }); }} /><small>{t("Krahasohen vetëm çmimet në")} {draft.currency}{t(". Pa konvertim valutor.")}</small></label>
+    <label>{t("Monedha e çmimit")}<select value={draft.currency} onChange={e => { const currency = e.target.value as PriceCurrency; apply({ currency, max_price: priceLimit(currency) }); }}>{(selectedCountry?.currencies ?? selectedCity?.currencies ?? priceCurrencies).map(currency => <option key={currency} value={currency}>{currency}</option>)}</select></label>
+    <label className="range-label"><span>{t("Çmimi maksimal")} <strong>{formatPrice(String(draft.max_price), draft.currency)}</strong></span><input type="range" min="0" max={Math.max(priceLimit(draft.currency), draft.max_price)} step="0.01" value={draft.max_price} onChange={e => apply({ max_price: Number(e.target.value) })} /><input aria-label={t("Çmimi maksimal në :currency", { currency: draft.currency })} type="number" min="0" max="1000000" step="0.01" value={priceInput} onChange={e => setPriceInput(e.target.value)} onBlur={e => { if (e.target.value && e.target.validity.valid) apply({ max_price: Number(e.target.value) }); else setPriceInput(String(draft.max_price)); }} onKeyDown={e => { if (e.key === "Enter" && e.currentTarget.value && e.currentTarget.reportValidity()) apply({ max_price: Number(e.currentTarget.value) }); }} /><small>{t("Krahasohen vetëm çmimet në")} {draft.currency}{t(". Pa konvertim valutor.")}</small></label>
     <label className="toggle-row"><span><strong>{t("I lirë sot")}</strong><small>{t("Shfaq vetëm të disponueshmit")}</small></span><input type="checkbox" checked={draft.date === today} onChange={event => apply({ date: event.target.checked ? today : "" })} /><i style={{ background: draft.date === today ? "var(--green)" : undefined, transform: draft.date === today ? "rotate(180deg)" : undefined }} /></label>
   </>;
 

@@ -39,7 +39,8 @@ class GoalkeeperController extends Controller
         if ($country && ! in_array($currency, GoalkeeperPricing::allowed($country), true)) {
             throw ValidationException::withMessages(['currency' => __('Kjo monedhë nuk lejohet për vendin e zgjedhur.')]);
         }
-        $maxPrice = $filters['max_price'] ?? GoalkeeperPricing::filterDefault($currency);
+        $priceLimits = GoalkeeperPricing::filterLimits();
+        $maxPrice = $filters['max_price'] ?? $priceLimits[$currency];
         $query = GoalkeeperProfile::publiclyVisible()->with(['city.country', 'contact', 'matchFormats', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions', 'weeklyHours'])
             ->where('currency', $currency)->where('price_cents', '<=', GoalkeeperPricing::minorUnits((string) $maxPrice));
 
@@ -68,6 +69,7 @@ class GoalkeeperController extends Controller
             'cities' => GoalkeeperPricing::cities(),
             'countries' => GoalkeeperPricing::countries(),
             'formats' => MatchFormat::inPreferredOrder()->pluck('code'),
+            'priceLimits' => $priceLimits,
             'today' => AvailabilityCalendar::today()->toDateString(),
             'maxDate' => AvailabilityCalendar::maxDate()->toDateString(),
             'filters' => [

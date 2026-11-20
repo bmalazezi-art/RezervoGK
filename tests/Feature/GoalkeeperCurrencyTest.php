@@ -121,6 +121,18 @@ class GoalkeeperCurrencyTest extends TestCase
         $this->get('/browse?max_price=7.25')->assertInertia(fn (Assert $page) => $page->has('keepers', 1)->where('keepers.0.id', $eur->id)->where('filters.currency', 'EUR'));
     }
 
+    public function test_default_price_limit_never_hides_a_more_expensive_public_profile(): void
+    {
+        $expensive = $this->keeper('XK', 'EUR', 2500);
+        $this->get('/browse')->assertInertia(fn (Assert $page) => $page
+            ->where('filters.max_price', 25)->where('priceLimits.EUR', 25)
+            ->where('keepers', fn ($keepers) => collect($keepers)->contains('id', $expensive->id)));
+        $this->get('/browse?city_id='.$expensive->city_id)->assertInertia(fn (Assert $page) => $page
+            ->where('keepers', fn ($keepers) => collect($keepers)->contains('id', $expensive->id)));
+        $this->get('/browse?max_price=15')->assertInertia(fn (Assert $page) => $page
+            ->where('keepers', fn ($keepers) => ! collect($keepers)->contains('id', $expensive->id)));
+    }
+
     public function test_region_defaults_local_currency_and_eur_remains_an_option(): void
     {
         $local = $this->keeper('AL', 'ALL', 100000);
