@@ -15,11 +15,15 @@ export default function AdminUserDetails({ user, profile, reports, audit, canDel
   const changeStatus = () => {
     const action = user.isSuspended ? t("riaktivizosh") : t("pezullosh");
     if (!window.confirm(t("A je i sigurt që dëshiron të :action llogarinë e :name?", { action, name: user.name }))) return;
-    const reason = window.prompt(t("Shkruaj arsyen e këtij veprimi (të paktën 10 karaktere)."));
+    const reason = window.prompt(t("Shkruaj arsyen e këtij veprimi (të paktën 10 karaktere)."))?.trim();
     if (!reason) return;
+    if (reason.length < 10) { window.alert(t("Arsyeja duhet të ketë të paktën 10 karaktere.")); return; }
     form.setData({ suspended: !user.isSuspended, reason });
     form.transform(() => ({ suspended: !user.isSuspended, reason }));
-    form.patch(`/admin/users/${user.id}/suspension`, { preserveScroll: true });
+    form.patch(`/admin/users/${user.id}/suspension`, {
+      preserveScroll: true,
+      onError: errors => window.alert(Object.values(errors)[0] ?? t("Veprimi nuk u krye. Provo përsëri.")),
+    });
   };
   const sendReset = () => {
     if (!window.confirm(t("T'i dërgohet :name një lidhje për të vendosur fjalëkalim të ri?", { name: user.name }))) return;
