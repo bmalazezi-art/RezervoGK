@@ -37,13 +37,13 @@ class AdminExportController extends Controller
         $public = GoalkeeperProfile::publiclyVisible()->pluck('id')->flip();
 
         return $this->csv('gjej-portier-goalkeepers-'.now()->format('Y-m-d').'.csv',
-            ['id', 'name', 'public_link', 'city', 'country', 'price', 'currency', 'formats', 'publicly_visible', 'verified', 'featured',
+            ['id', 'name', 'public_link', 'city', 'other_cities', 'country', 'price', 'currency', 'formats', 'publicly_visible', 'verified', 'featured',
                 'views_30_days', 'whatsapp_30_days', 'calls_30_days', 'created_at'],
             function () use ($stats, $public) {
-                foreach (GoalkeeperProfile::with(['city.country', 'matchFormats'])->orderBy('id')->lazy() as $profile) {
+                foreach (GoalkeeperProfile::with(['city.country', 'additionalCities', 'matchFormats'])->orderBy('id')->lazy() as $profile) {
                     $events = ($stats[$profile->id] ?? collect())->pluck('total', 'event_type');
                     yield [$profile->id, $profile->name, rtrim((string) config('app.url'), '/').$profile->publicPath(),
-                        $profile->city?->name, $profile->city?->country?->name, number_format($profile->price_cents / 100, 2, '.', ''), $profile->currency,
+                        $profile->city?->name, $profile->additionalCities->where('id', '!=', $profile->city_id)->pluck('name')->implode(' '), $profile->city?->country?->name, number_format($profile->price_cents / 100, 2, '.', ''), $profile->currency,
                         $profile->matchFormats->pluck('code')->implode(' '), isset($public[$profile->id]) ? 'yes' : 'no',
                         $profile->verified_at ? 'yes' : 'no', $profile->is_featured ? 'yes' : 'no',
                         (int) ($events['view'] ?? 0), (int) ($events['whatsapp'] ?? 0), (int) ($events['phone'] ?? 0), $profile->created_at?->toDateTimeString()];

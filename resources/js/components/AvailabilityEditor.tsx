@@ -1,11 +1,12 @@
 import { useForm } from "@inertiajs/react";
 import { useState, type FormEvent } from "react";
 import { t, useLocale } from "../i18n";
+import type { KeeperCity } from "../types/goalkeeper";
 import { calendarDates, countAvailableDates, displayAvailabilityTime, endsAfterMidnight, resolveAvailability, type WeeklyScheduleDay } from "../lib/availability";
 
-type DayInput = WeeklyScheduleDay & { enabled: boolean };
-type AvailabilityForm = { days: DayInput[]; offDates: string[]; extraDates: string[] };
-type Props = { keeperId: number; hours: WeeklyScheduleDay[]; extraDates: string[]; offDates: string[]; today: string };
+type DayInput = WeeklyScheduleDay & { enabled: boolean; cityId: number };
+type AvailabilityForm = { days: DayInput[]; offDates: string[]; extraDates: string[]; extraDateCities: Record<string, number> };
+type Props = { keeperId: number; hours: WeeklyScheduleDay[]; cities?: KeeperCity[]; extraDates: string[]; extraDateCities?: Record<string, number>; offDates: string[]; today: string };
 const dayNames = ["E hënë", "E martë", "E mërkurë", "E enjte", "E premte", "E shtunë", "E diel"];
 const sundayFirstDays = ["E diel", ...dayNames.slice(0, 6)];
 const monthNames = ["janar", "shkurt", "mars", "prill", "maj", "qershor", "korrik", "gusht", "shtator", "tetor", "nëntor", "dhjetor"];
@@ -31,14 +32,20 @@ function normalizedExceptions(days: DayInput[], extraDates: string[], offDates: 
   };
 }
 
-export default function AvailabilityEditor({ keeperId, hours, extraDates, offDates, today }: Props) {
+export default function AvailabilityEditor({ keeperId, hours, cities = [], extraDates, extraDateCities = {}, offDates, today }: Props) {
   useLocale();
+  // With two or more cities, every weekly day and extra date says which city the goalkeeper is in.
+  const multiCity = cities.length > 1;
+  const primaryCityId = cities[0]?.id ?? 0;
+  const knownCity = (id: number | undefined) => cities.some(city => city.id === id) ? id as number : primaryCityId;
+  const cityName = (id: number) => cities.find(city => city.id === id)?.name ?? "";
   const initialDays = dayNames.map((_, index) => {
     const saved = hours.find(day => day.weekday === index + 1);
-    return { weekday: index + 1, enabled: !!saved, start: saved?.start ?? "18:00", end: saved?.end ?? "23:00" };
+    return { weekday: index + 1, enabled: !!saved, start: saved?.start ?? "18:00", end: saved?.end ?? "23:00", cityId: knownCity(saved?.cityId) };
   });
   const initialExceptions = normalizedExceptions(initialDays, extraDates, offDates);
-  const form = useForm<AvailabilityForm>({ days: initialDays, ...initialExceptions });
+  const form = useForm<AvailabilityForm>({ days: initialDays, ...initialExceptions,
+    extraDateCities: Object.fromEntries(initialExceptions.extraDates.map(date => [date, knownCity(extraDateCities[date])])) });
   const [selectedDate, setSelectedDate] = useState(today);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(false);
@@ -47,6 +54,10 @@ export default function AvailabilityEditor({ keeperId, hours, extraDates, offDat
   const hasInvalidHours = schedule.some(day => day.start === day.end);
   const count = countAvailableDates(today, schedule, form.data.extraDates, form.data.offDates);
   const selected = resolveAvailability(selectedDate, schedule, form.data.extraDates, form.data.offDates);
+  const cityOn = (date: string, kind: string) => kind === "usual"
+    ? schedule.find(day => day.weekday === (new Date(`${date}T12:00:00Z`).getUTCDay() || 7))?.cityId ?? primaryCityId
+    : kind === "extra" ? form.data.extraDateCities[date] ?? primaryCityId : null;
+  const selectedCity = cityOn(selectedDate, selected.kind);
   const changed = (data: AvailabilityForm) => {
     setSaved(false);
     setSaveError(false);
@@ -76,9 +87,10 @@ export default function AvailabilityEditor({ keeperId, hours, extraDates, offDat
     setSaveError(false);
     let succeeded = false;
     form.transform(data => ({
-      days: data.days.filter(day => day.enabled).map(({ weekday, start, end }) => ({ weekday, start, end })),
+      days: data.days.filter(day => day.enabled).map(({ weekday, start, end, cityId }) => ({ weekday, start, end, city_id: cityId || null })),
       offDates: data.offDates,
       extraDates: data.extraDates,
+      extraDateCities: Object.fromEntries(data.extraDates.map(date => [date, data.extraDateCities[date] ?? (primaryCityId || null)])),
     }));
     form.put(`/keepers/${keeperId}/weekly-hours`, {
       preserveScroll: true,
@@ -113,10 +125,11 @@ export default function AvailabilityEditor({ keeperId, hours, extraDates, offDat
           <button type="button" onClick={() => setPreset("weekdays")}>{t("Vetëm ditët e javës")}</button>
           <button type="button" onClick={() => setPreset("weekends")}>{t("Vetëm fundjavat")}</button>
         </div>
+        {multiCity && <p className="availability-tip availability-city-tip">{t("Luan në :count qytete. Zgjidh qytetin për secilën ditë dhe për secilën datë shtesë.", { count: cities.length })}</p>}
         <div className="availability-day-rows">
           {form.data.days.map((day, index) => <div className={`availability-day-row${day.enabled ? " is-enabled" : ""}`} key={day.weekday}>
             <div className="availability-day-identity"><button type="button" role="switch" aria-checked={day.enabled} disabled={form.processing} aria-label={t(":day: :state, kaloje :action", { day: t(dayNames[index]), state: t(day.enabled ? "I/e disponueshëm" : "Jo i/e disponueshëm"), action: t(day.enabled ? "çaktivizo" : "aktivizo") })} onClick={() => changeDay(day.weekday, { enabled: !day.enabled })}><span /></button><strong>{t(dayNames[index])}</strong></div>
-            {day.enabled ? <div className="availability-time-range"><label><span>{t("Nga")}</span><select value={day.start} disabled={form.processing} onChange={event => changeDay(day.weekday, { start: event.target.value })}>{!hourOptions.includes(day.start) && <option value={day.start}>{day.start}</option>}{hourOptions.map(time => <option value={time} key={time}>{time}</option>)}</select></label><span className="availability-to">{t("deri")}</span><label><span>{t("Deri")}</span><select value={day.end} disabled={form.processing} onChange={event => changeDay(day.weekday, { end: event.target.value })}>{!hourOptions.includes(day.end) && <option value={day.end}>{day.end}</option>}{hourOptions.map(time => <option value={time} key={time}>{time}</option>)}</select></label>{day.end === day.start && <small className="availability-inline-error">{t("Ora e përfundimit duhet të ndryshojë nga ora e fillimit.")}</small>}{endsAfterMidnight(day.start, day.end) && <small className="availability-overnight">{t("Përfundon pas mesnatës dhe vazhdon ditën tjetër")}</small>}</div> : <span className="availability-not-available">{t("Jo i/e disponueshëm")}</span>}
+            {day.enabled ? <div className="availability-time-range"><label><span>{t("Nga")}</span><select value={day.start} disabled={form.processing} onChange={event => changeDay(day.weekday, { start: event.target.value })}>{!hourOptions.includes(day.start) && <option value={day.start}>{day.start}</option>}{hourOptions.map(time => <option value={time} key={time}>{time}</option>)}</select></label><span className="availability-to">{t("deri")}</span><label><span>{t("Deri")}</span><select value={day.end} disabled={form.processing} onChange={event => changeDay(day.weekday, { end: event.target.value })}>{!hourOptions.includes(day.end) && <option value={day.end}>{day.end}</option>}{hourOptions.map(time => <option value={time} key={time}>{time}</option>)}</select></label>{multiCity && <label className="availability-city-select"><span>{t("Qyteti")}</span><select value={day.cityId} disabled={form.processing} onChange={event => changeDay(day.weekday, { cityId: Number(event.target.value) })}>{cities.map(city => <option value={city.id} key={city.id}>{city.name}</option>)}</select></label>}{day.end === day.start && <small className="availability-inline-error">{t("Ora e përfundimit duhet të ndryshojë nga ora e fillimit.")}</small>}{endsAfterMidnight(day.start, day.end) && <small className="availability-overnight">{t("Përfundon pas mesnatës dhe vazhdon ditën tjetër")}</small>}</div> : <span className="availability-not-available">{t("Jo i/e disponueshëm")}</span>}
           </div>)}
         </div>
         <p className="availability-tip">{t("Këshillë: për të përfunduar pas mesnatës, zgjidh një orë përfundimi më të hershme se fillimi (p.sh. 20:00 deri 02:00).")}</p>
@@ -136,12 +149,13 @@ export default function AvailabilityEditor({ keeperId, hours, extraDates, offDat
             const topLabel = index === 0 ? t("Sot") : date.slice(-2) === "01" ? monthLabel(date) : "";
             const availabilityText = day.kind === "usual" ? `${displayAvailabilityTime(day.start ?? "")}–${displayAvailabilityTime(day.end ?? "")}` : day.kind === "extra" ? t("Shtesë") : day.kind === "day_off" ? t("Pushim") : t("Mbyllur");
             return <button type="button" key={date} aria-pressed={selectedDate === date} aria-label={t(":date, shënuar si :status", { date: dateLabel(date), status: stateLabel })} className={`availability-date-cell status-${day.kind}${selectedDate === date ? " is-selected" : ""}`} onClick={() => setSelectedDate(date)}>
-              <span className="availability-date-tag">{topLabel}{index === 0 && date.slice(-2) === "01" ? ` · ${monthLabel(date)}` : ""}</span><strong>{dateObject(date).getUTCDate()}</strong><span className="availability-date-status">{availabilityText}</span>
+              <span className="availability-date-tag">{topLabel}{index === 0 && date.slice(-2) === "01" ? ` · ${monthLabel(date)}` : ""}</span><strong>{dateObject(date).getUTCDate()}</strong><span className="availability-date-status">{availabilityText}</span>{multiCity && cityOn(date, day.kind) !== null && <span className="availability-date-city-tag">{cityName(cityOn(date, day.kind) as number)}</span>}
             </button>;
           })}
         </div>
         <div className="availability-date-detail" aria-live="polite">
-          <div><span>{fullDateLabel(selectedDate)}</span><strong>{selected.kind === "usual" ? `${t("I/e disponueshëm")} · ${displayAvailabilityTime(selected.start ?? "")}–${displayAvailabilityTime(selected.end ?? "")}` : selected.kind === "day_off" ? t("Ditë pushimi") : selected.kind === "extra" ? t("Datë shtesë · 18:00–23:00") : t("Jo i/e disponueshëm")}</strong></div>
+          <div><span>{fullDateLabel(selectedDate)}</span><strong>{selected.kind === "usual" ? `${t("I/e disponueshëm")} · ${displayAvailabilityTime(selected.start ?? "")}–${displayAvailabilityTime(selected.end ?? "")}` : selected.kind === "day_off" ? t("Ditë pushimi") : selected.kind === "extra" ? t("Datë shtesë · 18:00–23:00") : t("Jo i/e disponueshëm")}{multiCity && selected.kind === "usual" && selectedCity !== null && ` · ${cityName(selectedCity)}`}</strong>
+            {multiCity && selected.kind === "extra" && <label className="availability-date-city">{t("Qyteti për këtë datë")}<select value={selectedCity ?? primaryCityId} disabled={form.processing} onChange={event => changed({ ...form.data, extraDateCities: { ...form.data.extraDateCities, [selectedDate]: Number(event.target.value) } })}>{cities.map(city => <option value={city.id} key={city.id}>{city.name}</option>)}</select></label>}</div>
           <button type="button" disabled={form.processing} onClick={updateSelectedDate}>{t(selectedAction)}</button>
         </div>
         <p className="availability-exception-summary">{exceptionSummary}</p>

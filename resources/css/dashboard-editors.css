@@ -312,3 +312,9 @@
 .account-settings-card .editor-hint { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 4px 0 0; font-weight: 400; }
 .account-password .btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
 .account-delete-protected { margin: 0; padding: 14px 16px; border-radius: 10px; background: #f1f6ea; color: #33503a; font-size: 13px; line-height: 1.55; }
+
+/* Goalkeepers in more than one city choose the city per weekly day and per extra date. */
+.availability-time-range .availability-city-select { grid-column: 1 / -1; }
+.availability-date-city { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; font-weight: 700; }
+.availability-date-city select { min-width: 140px; height: 40px; padding: 0 8px; border: 1px solid #d7e0d7; border-radius: 8px; background: white; color: var(--ink); font-size: 12px; }
+.availability-date-cell .availability-date-city-tag { display: block; font-size: 9px; font-weight: 700; opacity: .75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }

@@ -56,6 +56,7 @@ class RegistrationController extends Controller
                 $profile->save();
                 $profile->contact()->create(['phone' => $data['phone'], 'whatsapp' => ltrim($data['phone'], '+')]);
                 $profile->matchFormats()->sync(MatchFormat::whereIn('code', $data['formats'])->pluck('id'));
+                $profile->syncAdditionalCities($data['extra_city_ids'] ?? []);
 
                 return $user;
             });

@@ -27,7 +27,7 @@ class AdminGoalkeepersController extends Controller
             'direction' => ['nullable', Rule::in(['asc', 'desc'])],
         ]);
 
-        $query = GoalkeeperProfile::query()->with(['city.country', 'user:id,name,email,is_suspended'])
+        $query = GoalkeeperProfile::query()->with(['city.country', 'additionalCities', 'user:id,name,email,is_suspended'])
             ->withCount(['reports as open_reports_count' => fn ($reports) => $reports->where('status', 'open')]);
         if (! empty($filters['search'])) {
             $query->where('name', 'like', '%'.trim($filters['search']).'%');
@@ -36,7 +36,7 @@ class AdminGoalkeepersController extends Controller
             $query->whereHas('city', fn ($cities) => $cities->where('country_id', $filters['country_id']));
         }
         if (! empty($filters['city_id'])) {
-            $query->where('city_id', $filters['city_id']);
+            $query->servingCity((int) $filters['city_id']);
         }
         match ($filters['visibility'] ?? null) {
             'public' => $query->whereIn('id', GoalkeeperProfile::publiclyVisible()->select('id')),
@@ -62,7 +62,7 @@ class AdminGoalkeepersController extends Controller
             'profiles' => $profiles->through(fn (GoalkeeperProfile $profile) => [
                 'id' => $profile->id, 'name' => $profile->name,
                 'photo' => ProfilePhoto::url($profile->photo_path, $profile->photo_url),
-                'city' => $profile->city?->name, 'country' => $profile->city?->country?->name,
+                'city' => $profile->city ? $profile->serviceCities()->pluck('name')->join(', ') : null, 'country' => $profile->city?->country?->name,
                 'createdAt' => $profile->created_at->toIso8601String(), 'updatedAt' => $profile->updated_at->toIso8601String(),
                 'isPublished' => $profile->is_published, 'isSuspended' => $profile->is_suspended,
                 'adminHidden' => $profile->admin_hidden, 'userSuspended' => $profile->user?->is_suspended ?? false,
@@ -81,7 +81,7 @@ class AdminGoalkeepersController extends Controller
 
     public function show(GoalkeeperProfile $profile)
     {
-        $profile->load(['city.country', 'user:id,name,email,is_suspended', 'weeklyHours', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions']);
+        $profile->load(['city.country', 'additionalCities', 'user:id,name,email,is_suspended', 'weeklyHours', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions']);
         $reports = $profile->reports()->latest('id')->limit(50)->get(['id', 'reason', 'details', 'status', 'created_at']);
         $audits = $profile->adminListingAudits()->with('actor:id,name')->latest('id')->limit(50)->get();
         $publiclyVisible = GoalkeeperProfile::publiclyVisible()->whereKey($profile->id)->exists();
@@ -93,13 +93,14 @@ class AdminGoalkeepersController extends Controller
                 'price' => $profile->price_cents / 100, 'currency' => $profile->currency,
                 'experienceYears' => $profile->experience_years, 'languages' => $profile->languages ?? [],
                 'formats' => $profile->matchFormats()->inPreferredOrder()->pluck('code'),
-                'city' => $profile->city?->name, 'country' => $profile->city?->country?->name,
+                'city' => $profile->city ? $profile->serviceCities()->pluck('name')->join(', ') : null, 'country' => $profile->city?->country?->name,
                 'user' => $profile->user ? ['id' => $profile->user->id, 'name' => $profile->user->name, 'email' => $profile->user->email, 'isSuspended' => $profile->user->is_suspended] : null,
                 'isPublished' => $profile->is_published, 'isSuspended' => $profile->is_suspended,
                 'adminHidden' => $profile->admin_hidden, 'isPubliclyVisible' => $publiclyVisible,
                 'isFeatured' => (bool) $profile->is_featured, 'isVerified' => $profile->verified_at !== null,
                 'createdAt' => $profile->created_at->toIso8601String(), 'updatedAt' => $profile->updated_at->toIso8601String(),
-                'weeklyHours' => $profile->weeklyHours->map(fn ($hour) => ['weekday' => $hour->weekday, 'start' => substr($hour->start_time, 0, 5), 'end' => substr($hour->end_time, 0, 5)]),
+                'weeklyHours' => $profile->weeklyHours->map(fn ($hour) => ['weekday' => $hour->weekday, 'start' => substr($hour->start_time, 0, 5), 'end' => substr($hour->end_time, 0, 5),
+                    'city' => $profile->serviceCities()->firstWhere('id', $hour->city_id)?->name ?? $profile->city?->name]),
                 'upcomingAvailabilities' => $profile->upcomingAvailabilities->take(30)->map(fn ($row) => $row->available_on->toDateString())->values(),
                 'upcomingExceptions' => $profile->upcomingAvailabilityExceptions->take(30)->map(fn ($row) => $row->unavailable_on->toDateString())->values(),
             ],

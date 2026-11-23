@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Support\AvailabilityCalendar;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
 class UpdateWeeklyHoursRequest extends FormRequest
@@ -17,7 +17,8 @@ class UpdateWeeklyHoursRequest extends FormRequest
     {
         return [
             'days' => ['present', 'array', 'list', 'max:7'],
-            'days.*' => ['required', 'array:weekday,start,end'],
+            'days.*' => ['required', 'array:weekday,start,end,city_id'],
+            'days.*.city_id' => ['nullable', 'integer'],
             'days.*.weekday' => ['required', 'integer', 'between:1,7', 'distinct'],
             'days.*.start' => ['required', 'date_format:H:i'],
             'days.*.end' => ['required', 'date_format:H:i'],
@@ -25,6 +26,9 @@ class UpdateWeeklyHoursRequest extends FormRequest
             'offDates.*' => ['required', 'distinct', ...AvailabilityCalendar::dateRules()],
             'extraDates' => ['sometimes', 'array', 'list', 'max:30'],
             'extraDates.*' => ['required', 'distinct', ...AvailabilityCalendar::dateRules()],
+            // Extra date => city id; a date without an entry is in the primary city.
+            'extraDateCities' => ['sometimes', 'array'],
+            'extraDateCities.*' => ['nullable', 'integer'],
             'user_id' => ['prohibited'], 'goalkeeper_profile_id' => ['prohibited'],
         ];
     }
@@ -35,9 +39,20 @@ class UpdateWeeklyHoursRequest extends FormRequest
             if ($validator->errors()->any()) {
                 return;
             }
+            $cityIds = $this->route('keeper')->serviceCityIds();
             foreach ($this->input('days') as $index => $day) {
                 if ($day['start'] === $day['end']) {
                     $validator->errors()->add("days.$index.end", __('Ora e përfundimit duhet të ndryshojë nga ora e fillimit.'));
+                }
+                if (isset($day['city_id']) && ! in_array((int) $day['city_id'], $cityIds, true)) {
+                    $validator->errors()->add("days.$index.city_id", __('Zgjidh një nga qytetet e profilit tënd.'));
+                }
+            }
+            foreach ((array) $this->input('extraDateCities', []) as $date => $cityId) {
+                if (! in_array($date, (array) $this->input('extraDates', []), true)) {
+                    $validator->errors()->add('extraDateCities', __('Qyteti mund të caktohet vetëm për një datë shtesë.'));
+                } elseif ($cityId !== null && ! in_array((int) $cityId, $cityIds, true)) {
+                    $validator->errors()->add("extraDateCities.$date", __('Zgjidh një nga qytetet e profilit tënd.'));
                 }
             }
         }];

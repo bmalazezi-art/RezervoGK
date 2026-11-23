@@ -48,7 +48,7 @@ class WeeklyHoursTest extends TestCase
             ['weekday' => 3, 'start' => '00:00', 'end' => '23:59'],
         ]])->assertRedirect('/dashboard');
         $this->get('/keepers/'.$this->profile->id)->assertInertia(fn (Assert $page) => $page
-            ->has('keeper.weeklyHours', 3)->where('keeper.weeklyHours.0', ['weekday' => 1, 'start' => '18:00', 'end' => '00:00', 'endsNextDay' => false])
+            ->has('keeper.weeklyHours', 3)->where('keeper.weeklyHours.0', ['weekday' => 1, 'start' => '18:00', 'end' => '00:00', 'cityId' => $this->profile->city_id, 'cityName' => $this->profile->city->name, 'endsNextDay' => false])
             ->where('keeper.weeklyHours.1.endsNextDay', false)->where('keeper.weeklyHours.2.weekday', 7)->where('keeper.weeklyHours.2.endsNextDay', true));
         $this->get('/dashboard')->assertInertia(fn (Assert $page) => $page->has('keeper.weeklyHours', 3));
         $this->put($this->url(), ['days' => [['weekday' => 6, 'start' => '13:00', 'end' => '02:00']]])->assertRedirect('/dashboard');
@@ -105,7 +105,7 @@ class WeeklyHoursTest extends TestCase
                 ->where('extraDates', [$extraDate])
                 ->where('offDates', [$offDate]));
 
-            $schedule = $this->profile->fresh()->weeklyHours->mapWithKeys(fn ($hour) => [$hour->weekday => ['start' => substr($hour->start_time, 0, 5), 'end' => substr($hour->end_time, 0, 5)]] )->all();
+            $schedule = $this->profile->fresh()->weeklyHours->mapWithKeys(fn ($hour) => [$hour->weekday => ['start' => substr($hour->start_time, 0, 5), 'end' => substr($hour->end_time, 0, 5)]])->all();
             $this->assertSame('day_off', AvailabilityCalendar::resolveDate($offDate, $schedule, [$offDate], [$offDate])['kind']);
             $this->assertSame('extra', AvailabilityCalendar::resolveDate($extraDate, $schedule, [$extraDate], [$offDate])['kind']);
             $this->assertSame('off', AvailabilityCalendar::resolveDate('2026-10-28', $schedule, [$offDate], ['2026-10-28'])['kind']);

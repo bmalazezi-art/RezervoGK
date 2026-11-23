@@ -96,3 +96,7 @@
   .profile-lower .form-grid { grid-template-columns: 1fr; }
   .profile-lower .form-grid > .btn { width: 100%; }
 }
+
+/* Goalkeepers in more than one city: which city each weekly day / calendar day is in. */
+.weekly-schedule-city { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; color: var(--muted); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.week button small.week-city { display: block; font-size: 9px; font-weight: 700; opacity: .8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }

@@ -2,8 +2,17 @@ import { t } from "../i18n";
 import { displayDate } from "./dates";
 import type { Keeper } from "../types/goalkeeper";
 
-export const keeperLocation = (keeper: Keeper) => keeper.cityName && keeper.countryName ? `${keeper.cityName}, ${t(keeper.countryName)}` : keeper.city;
+export const keeperCityNames = (keeper: Keeper) => keeper.cities?.length ? keeper.cities.map(city => city.name) : (keeper.cityName ? [keeper.cityName] : []);
+export const keeperLocation = (keeper: Keeper) => {
+  const names = keeperCityNames(keeper);
+  return names.length && keeper.countryName ? `${names.join(" · ")}, ${t(keeper.countryName)}` : keeper.city;
+};
 export function keeperAvailability(keeper: Keeper, requestedDate?: string): string {
+  const label = keeperAvailabilityDate(keeper, requestedDate);
+  const showCity = keeper.availableCityName && (requestedDate ? keeper.availableOnRequestedDate : keeper.availabilityKind !== "none");
+  return showCity ? t(":availability në :city", { availability: label, city: keeper.availableCityName ?? "" }) : label;
+}
+function keeperAvailabilityDate(keeper: Keeper, requestedDate?: string): string {
   if (requestedDate) return keeper.availableOnRequestedDate
     ? t("I lirë më :date", { date: displayDate(requestedDate) })
     : t("Jo i lirë më :date", { date: displayDate(requestedDate) });

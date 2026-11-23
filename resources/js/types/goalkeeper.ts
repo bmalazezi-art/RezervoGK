@@ -10,6 +10,10 @@ export interface Keeper {
   city: string;
   cityName?: string;
   countryName?: string;
+  /** Primary city first, then the other cities the goalkeeper plays in. */
+  cities?: KeeperCity[];
+  /** City of the shown availability date, only for goalkeepers in more than one city. */
+  availableCityName?: string | null;
   availableOn?: string | null;
   availabilityKind?: "today" | "tomorrow" | "date" | "none";
   price: number;
@@ -35,6 +39,7 @@ export interface PublicKeeper extends Keeper {
   availabilityDates: string[];
 }
 
+export interface KeeperCity { id: number; name: string }
 export interface CityOption { id: number; name: string; country_id: number; currencies: PriceCurrency[]; defaultCurrency: PriceCurrency }
 export interface CountryOption { id: number; name: string; currencies: PriceCurrency[]; defaultCurrency: PriceCurrency }
 export interface BrowseFilters {
@@ -46,4 +51,4 @@ export interface BrowseFilters {
   date: string;
 }
 
-export interface CalendarDay { iso: string; day: string; date: number; available: boolean }
+export interface CalendarDay { iso: string; day: string; date: number; available: boolean; cityId?: number | null; cityName?: string | null }

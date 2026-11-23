@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\City;
+use App\Models\GoalkeeperProfile;
 use App\Support\GoalkeeperPricing;
 use Illuminate\Validation\Rule;
 
@@ -39,9 +40,13 @@ trait ProfileFields
         }
 
         $cityId = $this->input('city_id');
-        $country = is_scalar($cityId) ? City::with('country')->find($cityId)?->country?->code : null;
+        $primaryCity = is_scalar($cityId) ? City::with('country')->find($cityId) : null;
+        $country = $primaryCity?->country?->code;
 
         return [
+            // Extra cities must be in the primary city's country: prices and currencies follow the country.
+            'extra_city_ids' => ['sometimes', 'nullable', 'array', 'list', 'max:'.GoalkeeperProfile::MAX_ADDITIONAL_CITIES],
+            'extra_city_ids.*' => ['required', 'integer', 'distinct', Rule::exists('cities', 'id')->where('country_id', $primaryCity?->country_id ?? -1)],
             'currency' => ['required', 'string', Rule::in(GoalkeeperPricing::allowed($country))],
             'name' => ['required', 'string', 'max:120'],
             'phone' => ['required', 'string', 'regex:/^\+[1-9][0-9]{7,14}$/'],
@@ -53,6 +58,14 @@ trait ProfileFields
             'is_published' => ['prohibited'], 'is_suspended' => ['prohibited'],
             'user_id' => ['prohibited'], 'is_verified' => ['prohibited'],
             'is_featured' => ['prohibited'], 'rating' => ['prohibited'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'extra_city_ids.max' => __('Mund të zgjedhësh deri në :max qytete shtesë.', ['max' => GoalkeeperProfile::MAX_ADDITIONAL_CITIES]),
+            'extra_city_ids.*.exists' => __('Qytetet shtesë duhet të jenë në të njëjtin shtet me qytetin kryesor.'),
         ];
     }
 }

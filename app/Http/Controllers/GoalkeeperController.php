@@ -41,11 +41,11 @@ class GoalkeeperController extends Controller
         }
         $priceLimits = GoalkeeperPricing::filterLimits();
         $maxPrice = $filters['max_price'] ?? $priceLimits[$currency];
-        $query = GoalkeeperProfile::publiclyVisible()->with(['city.country', 'contact', 'matchFormats', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions', 'weeklyHours'])
+        $query = GoalkeeperProfile::publiclyVisible()->with(['city.country', 'additionalCities', 'contact', 'matchFormats', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions', 'weeklyHours'])
             ->where('currency', $currency)->where('price_cents', '<=', GoalkeeperPricing::minorUnits((string) $maxPrice));
 
         if ($cityId = $filters['city_id'] ?? null) {
-            $query->where('city_id', $cityId);
+            $query->servingCity((int) $cityId);
         }
         if ($countryId = $filters['country_id'] ?? null) {
             $query->whereHas('city', fn ($city) => $city->where('country_id', $countryId));
@@ -92,14 +92,14 @@ class GoalkeeperController extends Controller
         abort_unless(GoalkeeperProfile::publiclyVisible()->whereKey($keeper->id)->exists(), 404);
         $data = $request->validate(['date' => ['nullable', ...array_slice(AvailabilityCalendar::dateRules(), 1)]]);
         $analytics->record($request, $keeper, 'view');
-        $keeper->load(['city.country', 'contact', 'matchFormats', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions', 'weeklyHours']);
+        $keeper->load(['city.country', 'additionalCities', 'contact', 'matchFormats', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions', 'weeklyHours']);
 
         $appUrl = rtrim(config('app.url'), '/');
         $profileUrl = $appUrl.$keeper->publicPath();
         $photoUrl = ProfilePhoto::url($keeper->photo_path, $keeper->photo_url);
         $description = trim($keeper->bio) !== ''
             ? Str::limit(trim($keeper->bio), 220)
-            : __('Portier :name nga :city. Shiko profilin dhe kontakto drejtpërdrejt.', ['name' => $keeper->name, 'city' => $keeper->city->name.', '.$keeper->city->country->name]);
+            : __('Portier :name nga :city. Shiko profilin dhe kontakto drejtpërdrejt.', ['name' => $keeper->name, 'city' => $keeper->serviceCities()->pluck('name')->join(', ').', '.$keeper->city->country->name]);
 
         $title = $keeper->name.' | Gjej portier';
 

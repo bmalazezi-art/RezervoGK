@@ -384,3 +384,19 @@ footer { background: var(--navy); color: white; padding: 70px max(5vw, 30px) 28p
 .verified-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: #e6f5d0; color: #2f5a0f; font-size: 11px; font-weight: 800; vertical-align: middle; white-space: nowrap; }
 .profile-title .verified-badge { margin: 6px 0 4px; }
 .admin-code-input { font-size: 26px !important; letter-spacing: 8px; text-align: center; font-weight: 800; }
+
+/* Extra cities a goalkeeper also plays in (registration and profile editor). */
+.extra-city-picker { grid-column: 1 / -1; border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.extra-city-picker legend { font-size: 10px; font-weight: 700; padding: 0; margin-bottom: 2px; }
+.extra-city-picker > small { color: var(--muted); font-size: 9px; }
+.extra-city-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.extra-city-options label { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; font-size: 10px; cursor: pointer; }
+.extra-city-options label.selected { border-color: var(--navy); background: var(--cream); font-weight: 700; }
+.extra-city-options input { width: auto; margin: 0; accent-color: var(--navy); }
+.extra-city-options label:has(input:disabled) { opacity: .55; cursor: not-allowed; }
+@media (max-width: 900px) {
+  .extra-city-picker legend { font-size: 13px; }
+  .extra-city-picker > small { font-size: 12px; }
+  .extra-city-options label { min-height: 44px; padding: 10px 14px; font-size: 14px; }
+  .extra-city-options input { width: 18px; height: 18px; }
+}

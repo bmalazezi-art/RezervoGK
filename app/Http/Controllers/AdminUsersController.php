@@ -30,7 +30,7 @@ class AdminUsersController extends Controller
             'direction' => ['nullable', Rule::in(['asc', 'desc'])],
         ]);
 
-        $query = User::query()->with(['goalkeeperProfile.city.country']);
+        $query = User::query()->with(['goalkeeperProfile.city.country', 'goalkeeperProfile.additionalCities']);
         if (! empty($filters['search'])) {
             $term = trim($filters['search']);
             $query->where(fn ($builder) => $builder->where('name', 'like', "%{$term}%")
@@ -53,7 +53,7 @@ class AdminUsersController extends Controller
             $query->whereHas('goalkeeperProfile.city', fn ($cities) => $cities->where('country_id', $filters['country_id']));
         }
         if (! empty($filters['city_id'])) {
-            $query->whereHas('goalkeeperProfile', fn ($profiles) => $profiles->where('city_id', $filters['city_id']));
+            $query->whereHas('goalkeeperProfile', fn ($profiles) => $profiles->servingCity((int) $filters['city_id']));
         }
 
         $sort = $filters['sort'] ?? 'created_at';
@@ -69,7 +69,7 @@ class AdminUsersController extends Controller
                 'accountType' => $user->is_admin ? 'admin' : ($user->goalkeeperProfile ? 'goalkeeper' : 'user'),
                 'isSuspended' => $user->is_suspended,
                 'country' => $user->goalkeeperProfile?->city?->country?->name,
-                'city' => $user->goalkeeperProfile?->city?->name,
+                'city' => $user->goalkeeperProfile?->city ? $user->goalkeeperProfile->serviceCities()->pluck('name')->join(', ') : null,
             ]),
             'filters' => [
                 'search' => $filters['search'] ?? '', 'account_type' => $filters['account_type'] ?? '',
@@ -85,7 +85,7 @@ class AdminUsersController extends Controller
 
     public function show(Request $request, User $user)
     {
-        $user->load(['goalkeeperProfile.city.country', 'goalkeeperProfile.weeklyHours', 'goalkeeperProfile.upcomingAvailabilities', 'goalkeeperProfile.upcomingAvailabilityExceptions']);
+        $user->load(['goalkeeperProfile.city.country', 'goalkeeperProfile.additionalCities', 'goalkeeperProfile.weeklyHours', 'goalkeeperProfile.upcomingAvailabilities', 'goalkeeperProfile.upcomingAvailabilityExceptions']);
         $profile = $user->goalkeeperProfile;
         $reports = $profile?->reports()->latest('id')->limit(50)->get(['id', 'reason', 'details', 'status', 'created_at']) ?? collect();
         $audits = AdminUserAudit::with('actor:id,name')->where('target_id', $user->id)->latest('id')->limit(50)->get();
@@ -104,7 +104,7 @@ class AdminUsersController extends Controller
                 && ! $user->is_admin && ! $user->hasSuperAdminIdentity(),
             'profile' => $profile ? [
                 'id' => $profile->id, 'name' => $profile->name,
-                'country' => $profile->city?->country?->name, 'city' => $profile->city?->name,
+                'country' => $profile->city?->country?->name, 'city' => $profile->city ? $profile->serviceCities()->pluck('name')->join(', ') : null,
                 'isPublished' => $profile->is_published, 'isSuspended' => $profile->is_suspended,
                 'isPubliclyVisible' => $publiclyVisible,
                 'weeklyHours' => $profile->weeklyHours->map(fn ($hour) => ['weekday' => $hour->weekday, 'start' => $hour->start_time, 'end' => $hour->end_time]),

@@ -10,10 +10,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class GoalkeeperProfile extends Model
 {
+    /** Besides the primary city: at most five cities per profile. */
+    public const MAX_ADDITIONAL_CITIES = 4;
+
     protected $fillable = [
         'city_id', 'slug', 'name', 'bio', 'photo_url', 'price_cents', 'currency',
         'experience_years', 'languages', 'rating', 'review_count', 'matches_played',
@@ -87,6 +91,62 @@ class GoalkeeperProfile extends Model
     public function city(): BelongsTo
     {
         return $this->belongsTo(City::class);
+    }
+
+    /** Cities the goalkeeper also plays in, besides the primary city_id (same country only). */
+    public function additionalCities(): BelongsToMany
+    {
+        return $this->belongsToMany(City::class, 'goalkeeper_profile_cities')->withTimestamps()->orderBy('cities.name');
+    }
+
+    /**
+     * Primary city first, then the additional cities.
+     *
+     * @return Collection<int, City>
+     */
+    public function serviceCities(): Collection
+    {
+        $additional = $this->relationLoaded('additionalCities') ? $this->getRelation('additionalCities') : $this->additionalCities()->get();
+
+        return collect([$this->city])->filter()->concat($additional->where('id', '!=', $this->city_id))->values();
+    }
+
+    /** @return list<int> */
+    public function serviceCityIds(): array
+    {
+        return $this->serviceCities()->pluck('id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    /**
+     * Replace the additional cities, then move weekly days and extra dates whose city is no longer offered
+     * back to the primary city.
+     *
+     * @param  list<int|string>  $cityIds
+     */
+    public function syncAdditionalCities(array $cityIds): void
+    {
+        $ids = collect($cityIds)->map(fn ($id) => (int) $id)->reject(fn ($id) => $id === (int) $this->city_id)->unique()->values();
+        $this->additionalCities()->sync($ids->all());
+        $this->unsetRelation('additionalCities');
+        $this->normalizeScheduleCities();
+    }
+
+    /** Weekly days and extra dates always point at one of the profile's cities; anything else becomes the primary city. */
+    public function normalizeScheduleCities(): void
+    {
+        $offered = [(int) $this->city_id, ...$this->additionalCities()->pluck('cities.id')->map(fn ($id) => (int) $id)->all()];
+        foreach ([GoalkeeperWeeklyHour::class, GoalkeeperAvailability::class] as $model) {
+            $model::where('goalkeeper_profile_id', $this->id)
+                ->where(fn ($rows) => $rows->whereNull('city_id')->orWhereNotIn('city_id', $offered))
+                ->update(['city_id' => $this->city_id]);
+        }
+    }
+
+    /** Profiles whose primary or additional cities include the given city. */
+    public function scopeServingCity(Builder $query, int $cityId): Builder
+    {
+        return $query->where(fn (Builder $profiles) => $profiles->where('goalkeeper_profiles.city_id', $cityId)
+            ->orWhereHas('additionalCities', fn (Builder $cities) => $cities->whereKey($cityId)));
     }
 
     public function contact(): HasOne

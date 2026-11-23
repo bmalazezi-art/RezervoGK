@@ -1326,5 +1326,15 @@
   "Gjej portier në": "Gjej portier on",
   "Na ndiq": "Follow us",
   "Lajmet, portierët e rinj dhe njoftimet i postojmë në Facebook dhe Instagram.": "We post news, new goalkeepers and announcements on Facebook and Instagram.",
-  "Veprimi nuk u krye. Provo përsëri.": "The action was not completed. Please try again."
+  "Veprimi nuk u krye. Provo përsëri.": "The action was not completed. Please try again.",
+  "Luan edhe në qytete të tjera?": "Do you also play in other cities?",
+  "Opsionale. Zgjidh deri në :max qytete në të njëjtin shtet. Te disponueshmëria cakton cilat ditë je në cilin qytet.": "Optional. Choose up to :max cities in the same country. Under availability you set which days you are in which city.",
+  ":availability në :city": ":availability in :city",
+  "Qyteti për këtë datë": "City for this date",
+  "Luan në :count qytete. Zgjidh qytetin për secilën ditë dhe për secilën datë shtesë.": "You play in :count cities. Choose the city for each day and for each extra date.",
+  "QYTETET": "CITIES",
+  "Mund të zgjedhësh deri në :max qytete shtesë.": "You can choose up to :max additional cities.",
+  "Qytetet shtesë duhet të jenë në të njëjtin shtet me qytetin kryesor.": "Additional cities must be in the same country as your main city.",
+  "Zgjidh një nga qytetet e profilit tënd.": "Choose one of the cities on your profile.",
+  "Qyteti mund të caktohet vetëm për një datë shtesë.": "A city can only be set for an extra date."
 }

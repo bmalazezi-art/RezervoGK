@@ -35,13 +35,14 @@ class DashboardController extends Controller
         }
         abort_unless($profile, 403);
         Gate::authorize('update', $profile);
-        $profile->load(['city.country', 'contact', 'matchFormats', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions', 'weeklyHours']);
+        $profile->load(['city.country', 'additionalCities', 'contact', 'matchFormats', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions', 'weeklyHours']);
 
         return Inertia::render('Dashboard', [
             'keeper' => (new GoalkeeperProfileResource($profile))->resolve(),
             'analytics' => $analytics->dashboard($profile),
             'cities' => GoalkeeperPricing::cities(),
             'cityId' => $profile->city_id,
+            'extraCityIds' => $profile->additionalCities->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
             'accountEmail' => $request->user()->email,
             // The site owner/admin account cannot delete itself (the server also refuses).
             'canDeleteAccount' => ! $request->user()->is_admin && ! $request->user()->hasSuperAdminIdentity(),
@@ -56,6 +57,9 @@ class DashboardController extends Controller
             'extraDates' => $profile->upcomingAvailabilities
                 ->filter(fn ($row) => $row->available_on->toDateString() <= AvailabilityCalendar::maxDate()->toDateString())
                 ->map(fn ($row) => $row->available_on->toDateString())->values()->all(),
+            'extraDateCities' => (object) $profile->upcomingAvailabilities
+                ->filter(fn ($row) => $row->available_on->toDateString() <= AvailabilityCalendar::maxDate()->toDateString())
+                ->mapWithKeys(fn ($row) => [$row->available_on->toDateString() => (int) ($row->city_id ?? $profile->city_id)])->all(),
             'offDates' => $profile->upcomingAvailabilityExceptions
                 ->filter(fn ($row) => $row->unavailable_on->toDateString() <= AvailabilityCalendar::maxDate()->toDateString())
                 ->map(fn ($row) => $row->unavailable_on->toDateString())->values()->all(),
@@ -85,6 +89,11 @@ class DashboardController extends Controller
                     $profile->photo_url = $path ? Storage::disk('public')->url($path) : '/keeper-placeholder.svg';
                 }
                 $profile->save();
+                $profile->load('city');
+                $extraCityIds = array_key_exists('extra_city_ids', $data)
+                    ? ($data['extra_city_ids'] ?? [])
+                    : $profile->additionalCities()->where('cities.country_id', $profile->city->country_id)->pluck('cities.id')->all();
+                $profile->syncAdditionalCities($extraCityIds);
                 $existingContact = $profile->contact;
                 $profile->contact()->updateOrCreate([], [
                     'phone' => $data['phone'],

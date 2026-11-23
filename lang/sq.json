@@ -1412,5 +1412,15 @@
   "Gjej portier në": "Gjej portier në",
   "Na ndiq": "Na ndiq",
   "Lajmet, portierët e rinj dhe njoftimet i postojmë në Facebook dhe Instagram.": "Lajmet, portierët e rinj dhe njoftimet i postojmë në Facebook dhe Instagram.",
-  "Veprimi nuk u krye. Provo përsëri.": "Veprimi nuk u krye. Provo përsëri."
+  "Veprimi nuk u krye. Provo përsëri.": "Veprimi nuk u krye. Provo përsëri.",
+  "Luan edhe në qytete të tjera?": "Luan edhe në qytete të tjera?",
+  "Opsionale. Zgjidh deri në :max qytete në të njëjtin shtet. Te disponueshmëria cakton cilat ditë je në cilin qytet.": "Opsionale. Zgjidh deri në :max qytete në të njëjtin shtet. Te disponueshmëria cakton cilat ditë je në cilin qytet.",
+  ":availability në :city": ":availability në :city",
+  "Qyteti për këtë datë": "Qyteti për këtë datë",
+  "Luan në :count qytete. Zgjidh qytetin për secilën ditë dhe për secilën datë shtesë.": "Luan në :count qytete. Zgjidh qytetin për secilën ditë dhe për secilën datë shtesë.",
+  "QYTETET": "QYTETET",
+  "Mund të zgjedhësh deri në :max qytete shtesë.": "Mund të zgjedhësh deri në :max qytete shtesë.",
+  "Qytetet shtesë duhet të jenë në të njëjtin shtet me qytetin kryesor.": "Qytetet shtesë duhet të jenë në të njëjtin shtet me qytetin kryesor.",
+  "Zgjidh një nga qytetet e profilit tënd.": "Zgjidh një nga qytetet e profilit tënd.",
+  "Qyteti mund të caktohet vetëm për një datë shtesë.": "Qyteti mund të caktohet vetëm për një datë shtesë."
 }

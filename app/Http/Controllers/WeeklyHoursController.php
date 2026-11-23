@@ -19,12 +19,14 @@ class WeeklyHoursController extends Controller
         $syncExceptions = array_key_exists('offDates', $data) || array_key_exists('extraDates', $data);
         $offDates = $data['offDates'] ?? [];
         $extraDates = $data['extraDates'] ?? [];
-        DB::transaction(function () use ($keeper, $days, $syncExceptions, $offDates, $extraDates) {
+        $extraDateCities = $data['extraDateCities'] ?? [];
+        DB::transaction(function () use ($keeper, $days, $syncExceptions, $offDates, $extraDates, $extraDateCities) {
             $profile = GoalkeeperProfile::whereKey($keeper->id)->lockForUpdate()->firstOrFail();
             Gate::authorize('update', $profile);
             $profile->weeklyHours()->delete();
             $profile->weeklyHours()->createMany(array_map(fn ($day) => [
                 'weekday' => $day['weekday'], 'start_time' => $day['start'], 'end_time' => $day['end'],
+                'city_id' => $day['city_id'] ?? $profile->city_id,
             ], $days));
 
             if ($syncExceptions) {
@@ -36,9 +38,12 @@ class WeeklyHoursController extends Controller
 
                 $profile->availabilities()->whereBetween('available_on', [$today, $maxDate])->delete();
                 $profile->availabilityExceptions()->whereBetween('unavailable_on', [$today, $maxDate])->delete();
-                $profile->availabilities()->createMany(array_map(fn ($date) => ['available_on' => $date], $effectiveExtraDates));
+                $profile->availabilities()->createMany(array_map(fn ($date) => [
+                    'available_on' => $date, 'city_id' => $extraDateCities[$date] ?? $profile->city_id,
+                ], $effectiveExtraDates));
                 $profile->availabilityExceptions()->createMany(array_map(fn ($date) => ['unavailable_on' => $date], $effectiveOffDates));
             }
+            $profile->normalizeScheduleCities();
         });
 
         return to_route('dashboard')->with('weekly_hours_status', __('Orari javor u ruajt. Kërkimi përsërit disponueshmërinë për 30 ditët e ardhshme.'));

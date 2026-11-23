@@ -27,7 +27,7 @@ class AvailabilityController extends Controller
 
             if ($available) {
                 $profile->availabilityExceptions()->whereDate('unavailable_on', $data['date'])->delete();
-                $profile->availabilities()->firstOrCreate(['available_on' => $data['date']]);
+                $profile->availabilities()->firstOrCreate(['available_on' => $data['date']], ['city_id' => $profile->city_id]);
             } else {
                 $profile->availabilities()->whereDate('available_on', $data['date'])->delete();
                 $profile->availabilityExceptions()->firstOrCreate(['unavailable_on' => $data['date']]);

@@ -1,5 +1,5 @@
 export type AvailabilityKind = "usual" | "day_off" | "extra" | "off";
-export type WeeklyScheduleDay = { weekday: number; start: string; end: string };
+export type WeeklyScheduleDay = { weekday: number; start: string; end: string; cityId?: number };
 export type ResolvedAvailability = { kind: AvailabilityKind; available: boolean; start: string | null; end: string | null };
 
 const weekdayFor = (iso: string) => new Date(`${iso}T12:00:00Z`).getUTCDay() || 7;

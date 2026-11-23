@@ -14,7 +14,7 @@ class HomeController extends Controller
     public function __invoke(): Response
     {
         return Inertia::render('Home', [
-            'keepers' => GoalkeeperProfileResource::collection(GoalkeeperProfile::publiclyVisible()->with(['city.country', 'contact', 'matchFormats', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions', 'weeklyHours'])
+            'keepers' => GoalkeeperProfileResource::collection(GoalkeeperProfile::publiclyVisible()->with(['city.country', 'additionalCities', 'contact', 'matchFormats', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions', 'weeklyHours'])
                 ->orderByDesc('is_featured')->latest('id')->limit(4)->get())->resolve(),
             'cities' => GoalkeeperPricing::cities(),
             'countries' => GoalkeeperPricing::countries(),
