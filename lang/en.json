@@ -1352,5 +1352,8 @@
   "Shikimet dhe kontaktet": "Views and contacts",
   "Një vizitor numërohet një herë në ditë për çdo profil.": "A visitor is counted once per day for each profile.",
   "Të gjitha monedhat": "All currencies",
-  "Zgjidh një monedhë ose një shtet për të filtruar sipas çmimit.": "Choose a currency or a country to filter by price."
+  "Zgjidh një monedhë ose një shtet për të filtruar sipas çmimit.": "Choose a currency or a country to filter by price.",
+  "Duke përgatitur fotografinë...": "Preparing the photo...",
+  "JPG ose PNG. Fotot e mëdha zvogëlohen automatikisht.": "JPG or PNG. Large photos are resized automatically.",
+  "Disa të dhëna duhen korrigjuar. Shiko fushat e shënuara më poshtë, pastaj vazhdo. Fjalëkalimin nuk ke nevojë ta shkruash sërish.": "Some details need fixing. Check the marked fields below, then continue. You don't need to type your password again."
 }

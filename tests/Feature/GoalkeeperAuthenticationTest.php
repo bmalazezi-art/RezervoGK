@@ -106,6 +106,25 @@ class GoalkeeperAuthenticationTest extends TestCase
         $this->assertDatabaseCount('users', 0);
     }
 
+    public function test_registration_accepts_phone_numbers_written_the_local_way(): void
+    {
+        $tirana = City::where('name', 'Tiranë')->firstOrFail();
+        $skopje = City::where('name', 'Shkup')->firstOrFail();
+        foreach ([
+            ['044 123 456', [], '+38344123456'],
+            ['00383 44 123 456', [], '+38344123456'],
+            ['38344123456', [], '+38344123456'],
+            ['069 123 4567', ['country_id' => $tirana->country_id, 'city_id' => $tirana->id, 'currency' => 'ALL', 'price' => '1500'], '+355691234567'],
+            ['070-123-456', ['country_id' => $skopje->country_id, 'city_id' => $skopje->id, 'currency' => 'MKD', 'price' => '600'], '+38970123456'],
+        ] as $index => [$typed, $place, $stored]) {
+            auth()->logout();
+            $this->post('/register', $this->registration([...$place, 'phone' => $typed, 'email' => "local{$index}@example.test"]))
+                ->assertSessionHasNoErrors()->assertRedirect('/dashboard');
+            $profile = User::where('email', "local{$index}@example.test")->firstOrFail()->goalkeeperProfile;
+            $this->assertSame($stored, $profile->contact->phone, $typed);
+        }
+    }
+
     public function test_registration_gives_a_readable_unique_profile_link(): void
     {
         $this->post('/register', $this->registration(['name' => 'Ardit Krasniqi']))->assertRedirect('/dashboard');

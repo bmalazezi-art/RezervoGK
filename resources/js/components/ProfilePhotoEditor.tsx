@@ -3,6 +3,7 @@ import { router, useForm } from "@inertiajs/react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button, Icon } from "./marketplace";
 import { FieldError } from "./KeeperAuthShell";
+import { preparePhoto } from "../lib/photoResize";
 
 type Props = { keeperId: number; name: string; photo: string };
 
@@ -40,10 +41,11 @@ export default function ProfilePhotoEditor({ keeperId, name, photo }: Props) {
     });
     return () => { stopException(); stopInvalid(); };
   }, []);
-  const choose = (file: File | null) => {
+  const choose = async (chosen: File | null) => {
     form.clearErrors(); setStatus(""); setRequestError("");
     form.setData({ photo: null, remove_photo: false });
-    if (!file) return;
+    if (!chosen) return;
+    const file = await preparePhoto(chosen);
     if (!["image/jpeg", "image/png"].includes(file.type) || file.size > 5 * 1024 * 1024) {
       form.setError("photo", "Zgjidh JPG ose PNG deri në 5MB.");
       if (input.current) input.current.value = "";
@@ -69,7 +71,7 @@ export default function ProfilePhotoEditor({ keeperId, name, photo }: Props) {
     <div className="photo-editor-body">
       <div className="photo-editor-preview"><img src={imageError ? "/keeper-placeholder.svg" : currentPhoto} alt={t("Fotografia e :name", { name })} onError={() => setImageError(true)} />{preview && <span>{t("Parapamje · ende e paruajtur")}</span>}</div>
       <div className="photo-editor-controls"><p>{t("Fotografia shfaqet në profilin publik dhe kartat e kërkimit kur profili është aktiv.")}</p>
-        <p className="editor-hint">{t("JPG ose PNG, deri në 5MB dhe 3000 × 3000px.")}</p>
+        <p className="editor-hint">{t("JPG ose PNG. Fotot e mëdha zvogëlohen automatikisht.")}</p>
         <input ref={input} id={`photo-${keeperId}`} hidden type="file" accept="image/jpeg,image/png" aria-label={t("Zgjidh fotografinë")} disabled={form.processing} onChange={event => choose(event.target.files?.[0] ?? null)} />
         <div className="photo-editor-actions"><Button variant="outline" disabled={form.processing} onClick={() => input.current?.click()}><Icon name="upload" size={17} /> {t("Zgjidh fotografinë")}</Button>
           <Button type="submit" disabled={form.processing || (!form.data.photo && !form.data.remove_photo)}>{form.processing ? t("Duke ruajtur...") : form.data.remove_photo ? t("Ruaj heqjen") : t("Ruaj fotografinë")}</Button></div>
