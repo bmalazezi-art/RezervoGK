@@ -45,8 +45,10 @@ export interface CountryOption { id: number; name: string; currencies: PriceCurr
 export interface BrowseFilters {
   city_id: string;
   country_id: string;
-  max_price: number;
-  currency: PriceCurrency;
+  /** Null while every currency is shown: prices can only be filtered within one currency. */
+  max_price: number | null;
+  /** Empty when no currency is chosen: the list then shows every currency. */
+  currency: PriceCurrency | "";
   format: string;
   date: string;
 }

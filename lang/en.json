@@ -1350,5 +1350,7 @@
   "jo publik": "not public",
   "Ende nuk ka profile portierësh.": "There are no goalkeeper profiles yet.",
   "Shikimet dhe kontaktet": "Views and contacts",
-  "Një vizitor numërohet një herë në ditë për çdo profil.": "A visitor is counted once per day for each profile."
+  "Një vizitor numërohet një herë në ditë për çdo profil.": "A visitor is counted once per day for each profile.",
+  "Të gjitha monedhat": "All currencies",
+  "Zgjidh një monedhë ose një shtet për të filtruar sipas çmimit.": "Choose a currency or a country to filter by price."
 }

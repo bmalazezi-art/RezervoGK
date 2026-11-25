@@ -124,13 +124,31 @@ class GoalkeeperCurrencyTest extends TestCase
     public function test_default_price_limit_never_hides_a_more_expensive_public_profile(): void
     {
         $expensive = $this->keeper('XK', 'EUR', 2500);
-        $this->get('/browse')->assertInertia(fn (Assert $page) => $page
+        $this->get('/browse?currency=EUR')->assertInertia(fn (Assert $page) => $page
             ->where('filters.max_price', 25)->where('priceLimits.EUR', 25)
             ->where('keepers', fn ($keepers) => collect($keepers)->contains('id', $expensive->id)));
         $this->get('/browse?city_id='.$expensive->city_id)->assertInertia(fn (Assert $page) => $page
             ->where('keepers', fn ($keepers) => collect($keepers)->contains('id', $expensive->id)));
         $this->get('/browse?max_price=15')->assertInertia(fn (Assert $page) => $page
             ->where('keepers', fn ($keepers) => ! collect($keepers)->contains('id', $expensive->id)));
+    }
+
+    public function test_unfiltered_browse_shows_profiles_in_every_currency(): void
+    {
+        $kosovo = $this->keeper('XK', 'EUR', 1000);
+        $albania = $this->keeper('AL', 'ALL', 150000);
+        $macedonia = $this->keeper('MK', 'MKD', 60000);
+        $ids = fn ($keepers) => collect($keepers)->pluck('id');
+
+        $this->get('/browse')->assertInertia(fn (Assert $page) => $page
+            ->where('filters.currency', '')->where('filters.max_price', null)
+            ->where('keepers', fn ($keepers) => $ids($keepers)->intersect([$kosovo->id, $albania->id, $macedonia->id])->count() === 3));
+        $this->get('/browse?format=5v5')->assertInertia(fn (Assert $page) => $page
+            ->where('keepers', fn ($keepers) => $ids($keepers)->contains($albania->id) && $ids($keepers)->contains($macedonia->id)));
+        $this->get('/browse?country_id='.$albania->city->country_id)->assertInertia(fn (Assert $page) => $page
+            ->where('filters.currency', 'ALL')->where('keepers', fn ($keepers) => $ids($keepers)->contains($albania->id) && ! $ids($keepers)->contains($kosovo->id)));
+        $this->get('/browse?currency=MKD')->assertInertia(fn (Assert $page) => $page
+            ->where('keepers', fn ($keepers) => $ids($keepers)->contains($macedonia->id) && ! $ids($keepers)->contains($albania->id)));
     }
 
     public function test_region_defaults_local_currency_and_eur_remains_an_option(): void

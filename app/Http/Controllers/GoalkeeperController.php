@@ -35,14 +35,19 @@ class GoalkeeperController extends Controller
         ]);
         $country = isset($filters['country_id']) ? Country::find($filters['country_id'])?->code
             : (isset($filters['city_id']) ? City::with('country')->find($filters['city_id'])?->country?->code : null);
-        $currency = $filters['currency'] ?? GoalkeeperPricing::defaultCurrency($country);
+        // With no country, city or currency chosen the list shows every currency (each card shows its own price),
+        // so profiles priced in ALL or MKD are not hidden. Prices can only be compared, and so filtered, within one
+        // currency: a country or city picks its default currency, and a bare max_price keeps meaning EUR.
+        $currency = $filters['currency'] ?? ($country || isset($filters['max_price']) ? GoalkeeperPricing::defaultCurrency($country) : null);
         if ($country && ! in_array($currency, GoalkeeperPricing::allowed($country), true)) {
             throw ValidationException::withMessages(['currency' => __('Kjo monedhë nuk lejohet për vendin e zgjedhur.')]);
         }
         $priceLimits = GoalkeeperPricing::filterLimits();
-        $maxPrice = $filters['max_price'] ?? $priceLimits[$currency];
-        $query = GoalkeeperProfile::publiclyVisible()->with(['city.country', 'additionalCities', 'contact', 'matchFormats', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions', 'weeklyHours'])
-            ->where('currency', $currency)->where('price_cents', '<=', GoalkeeperPricing::minorUnits((string) $maxPrice));
+        $maxPrice = $currency ? ($filters['max_price'] ?? $priceLimits[$currency]) : null;
+        $query = GoalkeeperProfile::publiclyVisible()->with(['city.country', 'additionalCities', 'contact', 'matchFormats', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions', 'weeklyHours']);
+        if ($currency) {
+            $query->where('currency', $currency)->where('price_cents', '<=', GoalkeeperPricing::minorUnits((string) $maxPrice));
+        }
 
         if ($cityId = $filters['city_id'] ?? null) {
             $query->servingCity((int) $cityId);
@@ -75,7 +80,7 @@ class GoalkeeperController extends Controller
             'filters' => [
                 'city_id' => isset($cityId) ? (string) $cityId : '',
                 'country_id' => isset($countryId) ? (string) $countryId : '',
-                'max_price' => (float) $maxPrice, 'currency' => $currency,
+                'max_price' => $currency ? (float) $maxPrice : null, 'currency' => $currency ?? '',
                 'format' => $format ?? '',
                 'date' => $date ?? '',
             ],
