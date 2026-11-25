@@ -6,6 +6,8 @@ use App\Models\GoalkeeperProfile;
 use App\Models\AdminUserAudit;
 use App\Models\GoalkeeperProfileReport;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use App\Support\AvailabilityCalendar;
 use Database\Seeders\GoalkeeperDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -44,6 +46,25 @@ class AdminDashboardTest extends TestCase
             ->where('usersByCountry.1.total', 1)
             ->where('recentRegistrations.0.email', 'recent@example.test')
             ->where('recentReports.0.profileName', 'Ardit Krasniqi'));
+    }
+
+    public function test_overview_and_listing_details_show_profile_views_and_contact_clicks(): void
+    {
+        $this->withoutVite()->seed(GoalkeeperDemoSeeder::class);
+        $profile = GoalkeeperProfile::firstOrFail();
+        $today = AvailabilityCalendar::today();
+        foreach ([[$today, 'view', 3], [$today->subDays(10), 'view', 5], [$today->subDays(40), 'view', 7], [$today, 'whatsapp', 2], [$today->subDays(3), 'phone', 1]] as [$day, $type, $count]) {
+            DB::table('goalkeeper_profile_analytics')->insert(['goalkeeper_profile_id' => $profile->id, 'event_date' => $day->toDateString(),
+                'event_type' => $type, 'event_count' => $count, 'created_at' => now(), 'updated_at' => now()]);
+        }
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $this->actingAs($admin)->get('/admin')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('profileActivity', fn ($rows) => collect($rows)->contains(fn ($row) => $row['id'] === $profile->id
+                && $row['viewsToday'] === 3 && $row['views7Days'] === 3 && $row['views30Days'] === 8 && $row['viewsTotal'] === 15
+                && $row['whatsapp'] === 2 && $row['phone'] === 1)));
+        $this->actingAs($admin)->get('/admin/goalkeepers/'.$profile->id)->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('activity.totalViews', 15)->where('activity.views30Days', 8)->where('activity.whatsappClicks', 2)->where('activity.phoneClicks', 1));
     }
 
     public function test_only_open_reports_are_included_in_the_moderation_queue(): void

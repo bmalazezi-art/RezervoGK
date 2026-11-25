@@ -6,6 +6,7 @@ import "../../css/admin-dashboard.css";
 type Registration = { id: number; name: string; email: string; createdAt: string };
 type Report = { id: number; profileId: number; profileName: string | null; reason: string; createdAt: string };
 type GrowthPoint = { date: string; users: number; profiles: number };
+type ProfileActivity = { id: number; name: string; isPublic: boolean; viewsToday: number; views7Days: number; views30Days: number; viewsTotal: number; whatsapp: number; phone: number };
 type Props = {
   stats: { totalUsers: number; totalProfiles: number; activeProfiles: number; publishedProfiles: number; unpublishedProfiles: number; suspendedUsers: number; hiddenProfiles: number; pendingReports: number; newRegistrations7Days: number; newRegistrations30Days: number };
   profileVisibility: { published: number; unpublished: number };
@@ -13,6 +14,7 @@ type Props = {
   usersByCountry: { country: string; total: number }[];
   recentRegistrations: Registration[];
   recentReports: Report[];
+  profileActivity?: ProfileActivity[];
 };
 
 const date = (value: string) => new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
@@ -34,8 +36,9 @@ function GrowthChart({ points }: { points: GrowthPoint[] }) {
   </svg></div>;
 }
 
-export default function AdminDashboard({ stats, profileVisibility, growth, usersByCountry, recentRegistrations, recentReports }: Props) {
+export default function AdminDashboard({ stats, profileVisibility, growth, usersByCountry, recentRegistrations, recentReports, profileActivity = [] }: Props) {
   useLocale();
+  const sum = (key: "viewsToday" | "views7Days" | "views30Days" | "viewsTotal" | "whatsapp" | "phone") => profileActivity.reduce((total, row) => total + row[key], 0);
   const maxProfiles = Math.max(1, profileVisibility.published, profileVisibility.unpublished);
   const maxCountry = Math.max(1, ...usersByCountry.map(row => row.total));
   return <main className="page-main dashboard-page admin-dashboard">
@@ -51,6 +54,15 @@ export default function AdminDashboard({ stats, profileVisibility, growth, users
           ["Regjistrime · 7 ditët e fundit", stats.newRegistrations7Days], ["Regjistrime · 30 ditët e fundit", stats.newRegistrations30Days],
         ].map(([label, value]) => <article className="panel admin-overview-metric" key={label}><span>{t(label as string)}</span><strong>{Number(value).toLocaleString()}</strong></article>)}
       </div>
+      <section className="panel admin-profile-activity"><div className="panel-head"><div><h2>{t("Shikimet dhe kontaktet e profileve")}</h2><span>{t("Një vizitor numërohet një herë në ditë për çdo profil. Shikimet e portierit vetë dhe të administratorëve nuk numërohen.")}</span></div><Link className="text-link" href="/admin/insights">{t("Kërkesa dhe kontaktet")}</Link></div>
+        <div className="admin-overview-metrics">
+          {[["Shikime sot", sum("viewsToday")], ["Shikime · 7 ditët e fundit", sum("views7Days")], ["Shikime · 30 ditët e fundit", sum("views30Days")], ["Shikime gjithsej", sum("viewsTotal")], ["Klikime WhatsApp", sum("whatsapp")], ["Klikime Thirr", sum("phone")]]
+            .map(([label, value]) => <article className="panel admin-overview-metric" key={label}><span>{t(label as string)}</span><strong>{Number(value).toLocaleString()}</strong></article>)}
+        </div>
+        {profileActivity.length ? <div className="admin-table-wrap"><table className="admin-user-table"><thead><tr><th>{t("Portieri")}</th><th>{t("Sot")}</th><th>{t("7 ditë")}</th><th>{t("30 ditë")}</th><th>{t("Gjithsej")}</th><th>WhatsApp</th><th>{t("Thirr")}</th></tr></thead>
+          <tbody>{profileActivity.map(row => <tr key={row.id}><td><Link href={`/admin/goalkeepers/${row.id}`}>{row.name}</Link>{!row.isPublic && <small> · {t("jo publik")}</small>}</td><td>{row.viewsToday}</td><td>{row.views7Days}</td><td>{row.views30Days}</td><td><strong>{row.viewsTotal}</strong></td><td>{row.whatsapp}</td><td>{row.phone}</td></tr>)}</tbody></table></div>
+          : <p className="admin-empty">{t("Ende nuk ka profile portierësh.")}</p>}
+      </section>
       <div className="admin-grid">
         <section className="panel"><div className="panel-head"><div><h2>{t("Rritja e regjistrimeve")}</h2><span>{t("Përdorues dhe profile gjatë 30 ditëve të fundit")}</span></div><Link className="text-link" href="/admin/analytics">{t("Analitika")}</Link></div>
           {growth.some(point => point.users || point.profiles) ? <><GrowthChart points={growth} /><div className="admin-chart-legend"><span><i className="legend-users" />{t("Përdoruesit")}</span><span><i className="legend-profiles" />{t("Profilet")}</span></div></> : <p className="admin-empty">{t("Nuk ka të dhëna regjistrimesh për 30 ditët e fundit.")}</p>}

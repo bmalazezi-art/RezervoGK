@@ -7,6 +7,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\GoalkeeperProfile;
 use App\Support\GoalkeeperListingModeration;
+use App\Support\ProfileAnalytics;
 use App\Support\ProfilePhoto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -79,7 +80,7 @@ class AdminGoalkeepersController extends Controller
         ]);
     }
 
-    public function show(GoalkeeperProfile $profile)
+    public function show(GoalkeeperProfile $profile, ProfileAnalytics $analytics)
     {
         $profile->load(['city.country', 'additionalCities', 'user:id,name,email,is_suspended', 'weeklyHours', 'upcomingAvailabilities', 'upcomingAvailabilityExceptions']);
         $reports = $profile->reports()->latest('id')->limit(50)->get(['id', 'reason', 'details', 'status', 'created_at']);
@@ -87,6 +88,7 @@ class AdminGoalkeepersController extends Controller
         $publiclyVisible = GoalkeeperProfile::publiclyVisible()->whereKey($profile->id)->exists();
 
         return Inertia::render('AdminGoalkeeperDetails', [
+            'activity' => $analytics->dashboard($profile),
             'profile' => [
                 'id' => $profile->id, 'name' => $profile->name, 'slug' => $profile->slug,
                 'bio' => $profile->bio, 'photo' => ProfilePhoto::url($profile->photo_path, $profile->photo_url),

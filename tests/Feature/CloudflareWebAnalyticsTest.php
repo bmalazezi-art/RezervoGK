@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\GoalkeeperProfile;
 use App\Models\User;
+use App\Support\AvailabilityCalendar;
 use Database\Seeders\GoalkeeperDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -63,7 +64,7 @@ class CloudflareWebAnalyticsTest extends TestCase
 
     public function test_query_strings_are_never_tracked(): void
     {
-        foreach (['/?utm_source=instagram', '/browse?city=1', '/browse?date=2026-11-20', '/faq?ref=x'] as $url) {
+        foreach (['/?utm_source=instagram', '/browse?city=1', '/browse?date='.AvailabilityCalendar::today()->addDay()->toDateString(), '/faq?ref=x'] as $url) {
             $this->get($url)->assertOk()->assertDontSee('cf-web-analytics-token', false);
         }
     }

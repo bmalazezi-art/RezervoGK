@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\GoalkeeperProfile;
 use App\Models\GoalkeeperProfileReport;
 use App\Models\User;
+use App\Support\AvailabilityCalendar;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class AdminDashboardController extends Controller
@@ -35,6 +37,30 @@ class AdminDashboardController extends Controller
             ->selectRaw('COALESCE(SUM(CASE WHEN admin_hidden = 1 THEN 1 ELSE 0 END), 0) as hidden_profiles')
             ->first();
 
+        // Profile views and contact clicks, counted once per visitor session, profile, event and day (see ProfileAnalytics).
+        $marketDay = AvailabilityCalendar::today();
+        $since7 = $marketDay->subDays(6)->toDateString();
+        $since30 = $marketDay->subDays(29)->toDateString();
+        $activity = DB::table('goalkeeper_profile_analytics')->select('goalkeeper_profile_id')
+            ->selectRaw("SUM(CASE WHEN event_type = 'view' AND event_date = ? THEN event_count ELSE 0 END) as views_today", [$marketDay->toDateString()])
+            ->selectRaw("SUM(CASE WHEN event_type = 'view' AND event_date >= ? THEN event_count ELSE 0 END) as views_7", [$since7])
+            ->selectRaw("SUM(CASE WHEN event_type = 'view' AND event_date >= ? THEN event_count ELSE 0 END) as views_30", [$since30])
+            ->selectRaw("SUM(CASE WHEN event_type = 'view' THEN event_count ELSE 0 END) as views_total")
+            ->selectRaw("SUM(CASE WHEN event_type = 'whatsapp' THEN event_count ELSE 0 END) as whatsapp")
+            ->selectRaw("SUM(CASE WHEN event_type = 'phone' THEN event_count ELSE 0 END) as phone")
+            ->groupBy('goalkeeper_profile_id')->get()->keyBy('goalkeeper_profile_id');
+        $publicIds = GoalkeeperProfile::publiclyVisible()->pluck('id')->flip();
+        $profileActivity = GoalkeeperProfile::query()->get(['id', 'name'])->map(function (GoalkeeperProfile $profile) use ($activity, $publicIds) {
+            $row = $activity[$profile->id] ?? null;
+
+            return [
+                'id' => $profile->id, 'name' => $profile->name, 'isPublic' => isset($publicIds[$profile->id]),
+                'viewsToday' => (int) ($row->views_today ?? 0), 'views7Days' => (int) ($row->views_7 ?? 0),
+                'views30Days' => (int) ($row->views_30 ?? 0), 'viewsTotal' => (int) ($row->views_total ?? 0),
+                'whatsapp' => (int) ($row->whatsapp ?? 0), 'phone' => (int) ($row->phone ?? 0),
+            ];
+        })->sortByDesc(fn (array $row) => [$row['viewsTotal'], $row['whatsapp'] + $row['phone']])->values();
+
         return Inertia::render('AdminDashboard', [
             'stats' => [
                 'totalUsers' => (int) $userStats->total_users,
@@ -61,6 +87,7 @@ class AdminDashboardController extends Controller
             'recentReports' => GoalkeeperProfileReport::with('profile:id,name')->where('status', 'open')->latest('id')->limit(6)->get()
                 ->map(fn (GoalkeeperProfileReport $report) => ['id' => $report->id, 'profileId' => $report->goalkeeper_profile_id, 'profileName' => $report->profile?->name, 'reason' => $report->reason, 'createdAt' => $report->created_at->toIso8601String()]),
             'growth' => $growth,
+            'profileActivity' => $profileActivity,
             'profileVisibility' => [
                 'published' => (int) $profileStats->published_profiles,
                 'unpublished' => (int) $profileStats->unpublished_profiles,

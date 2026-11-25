@@ -1336,5 +1336,19 @@
   "Mund të zgjedhësh deri në :max qytete shtesë.": "You can choose up to :max additional cities.",
   "Qytetet shtesë duhet të jenë në të njëjtin shtet me qytetin kryesor.": "Additional cities must be in the same country as your main city.",
   "Zgjidh një nga qytetet e profilit tënd.": "Choose one of the cities on your profile.",
-  "Qyteti mund të caktohet vetëm për një datë shtesë.": "A city can only be set for an extra date."
+  "Qyteti mund të caktohet vetëm për një datë shtesë.": "A city can only be set for an extra date.",
+  "Shikimet dhe kontaktet e profileve": "Profile views and contacts",
+  "Një vizitor numërohet një herë në ditë për çdo profil. Shikimet e portierit vetë dhe të administratorëve nuk numërohen.": "A visitor is counted once per day for each profile. Views by the goalkeeper themselves and by administrators are not counted.",
+  "Shikime sot": "Views today",
+  "Shikime · 7 ditët e fundit": "Views · last 7 days",
+  "Shikime · 30 ditët e fundit": "Views · last 30 days",
+  "Klikime WhatsApp": "WhatsApp clicks",
+  "Klikime Thirr": "Call clicks",
+  "7 ditë": "7 days",
+  "30 ditë": "30 days",
+  "Gjithsej": "Total",
+  "jo publik": "not public",
+  "Ende nuk ka profile portierësh.": "There are no goalkeeper profiles yet.",
+  "Shikimet dhe kontaktet": "Views and contacts",
+  "Një vizitor numërohet një herë në ditë për çdo profil.": "A visitor is counted once per day for each profile."
 }
