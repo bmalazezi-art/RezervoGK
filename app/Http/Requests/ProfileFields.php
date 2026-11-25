@@ -105,6 +105,7 @@ trait ProfileFields
     public function messages(): array
     {
         return [
+            'phone.regex' => __('Numri i telefonit nuk duket i saktë. Shkruaje p.sh. 044 123 456 ose +383 44 123 456.'),
             'extra_city_ids.max' => __('Mund të zgjedhësh deri në :max qytete shtesë.', ['max' => GoalkeeperProfile::MAX_ADDITIONAL_CITIES]),
             'extra_city_ids.*.exists' => __('Qytetet shtesë duhet të jenë në të njëjtin shtet me qytetin kryesor.'),
         ];

@@ -1355,5 +1355,11 @@
   "Zgjidh një monedhë ose një shtet për të filtruar sipas çmimit.": "Choose a currency or a country to filter by price.",
   "Duke përgatitur fotografinë...": "Preparing the photo...",
   "JPG ose PNG. Fotot e mëdha zvogëlohen automatikisht.": "JPG or PNG. Large photos are resized automatically.",
-  "Disa të dhëna duhen korrigjuar. Shiko fushat e shënuara më poshtë, pastaj vazhdo. Fjalëkalimin nuk ke nevojë ta shkruash sërish.": "Some details need fixing. Check the marked fields below, then continue. You don't need to type your password again."
+  "Disa të dhëna duhen korrigjuar. Shiko fushat e shënuara më poshtë, pastaj vazhdo. Fjalëkalimin nuk ke nevojë ta shkruash sërish.": "Some details need fixing. Check the marked fields below, then continue. You don't need to type your password again.",
+  "Zgjidh qytetin": "Choose your city",
+  "Shumë përpjekje brenda një minute. Prit një minutë dhe kliko sërish «Krijo profilin falas». Të dhënat e tua janë ruajtur.": "Too many attempts within a minute. Wait a minute and click «Create a free profile» again. Your details are kept.",
+  "Sesioni skadoi. Rifresko faqen dhe provo përsëri.": "Your session expired. Refresh the page and try again.",
+  "Diçka shkoi keq. Provo përsëri pas pak. Të dhënat e tua janë ruajtur.": "Something went wrong. Try again in a moment. Your details are kept.",
+  "Lidhja u ndërpre. Kontrollo internetin dhe kliko sërish «Krijo profilin falas». Të dhënat e tua janë ruajtur.": "The connection dropped. Check your internet and click «Create a free profile» again. Your details are kept.",
+  "Numri i telefonit nuk duket i saktë. Shkruaje p.sh. 044 123 456 ose +383 44 123 456.": "That phone number doesn't look right. Write it like 044 123 456 or +383 44 123 456."
 }

@@ -125,6 +125,12 @@ class GoalkeeperAuthenticationTest extends TestCase
         }
     }
 
+    public function test_an_unreadable_phone_number_explains_how_to_write_it(): void
+    {
+        $this->post('/register', $this->registration(['phone' => '12 34']))
+            ->assertSessionHasErrors(['phone' => __('Numri i telefonit nuk duket i saktë. Shkruaje p.sh. 044 123 456 ose +383 44 123 456.')]);
+    }
+
     public function test_registration_gives_a_readable_unique_profile_link(): void
     {
         $this->post('/register', $this->registration(['name' => 'Ardit Krasniqi']))->assertRedirect('/dashboard');
