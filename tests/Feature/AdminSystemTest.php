@@ -84,11 +84,14 @@ class AdminSystemTest extends TestCase
         PlatformSetting::updateOrCreate(['key' => 'announcement'], ['value' => 'Language unknown legacy announcement']);
         PlatformSetting::updateOrCreate(['key' => 'announcement_sq'], ['value' => 'Njoftim në shqip']);
         PlatformSetting::updateOrCreate(['key' => 'announcement_en'], ['value' => 'Notice in English']);
+        PlatformSetting::updateOrCreate(['key' => 'announcement_mk'], ['value' => 'Известување на македонски']);
 
         $this->withCookie('rezervogk_locale', 'sq')->get('/')
             ->assertInertia(fn ($page) => $page->where('platformAnnouncement', 'Njoftim në shqip'));
         $this->withCookie('rezervogk_locale', 'en')->get('/')
             ->assertInertia(fn ($page) => $page->where('platformAnnouncement', 'Notice in English'));
+        $this->withCookie('rezervogk_locale', 'mk')->get('/')
+            ->assertInertia(fn ($page) => $page->where('platformAnnouncement', 'Известување на македонски'));
 
         PlatformSetting::whereKey('announcement_en')->delete();
         $this->withCookie('rezervogk_locale', 'en')->get('/')
@@ -104,11 +107,13 @@ class AdminSystemTest extends TestCase
             'registration_enabled' => true,
             'announcement_sq' => 'Njoftim shqip',
             'announcement_en' => 'English notice',
+            'announcement_mk' => 'Известување',
             'reason' => 'Publishing notices in both supported languages.',
         ])->assertRedirect();
 
         $this->assertSame('Njoftim shqip', PlatformSetting::value('announcement_sq'));
         $this->assertSame('English notice', PlatformSetting::value('announcement_en'));
+        $this->assertSame('Известување', PlatformSetting::value('announcement_mk'));
     }
 
     public function test_non_admin_cannot_grant_access_and_short_reasons_are_rejected(): void
@@ -131,8 +136,8 @@ class AdminSystemTest extends TestCase
 
         $this->actingAs($admin)->get('/admin/settings?candidate_search=older-candidate@example.test')
             ->assertOk()->assertInertia(fn ($page) => $page->component('AdminSystem')
-                ->where('candidateSearch', 'older-candidate@example.test')
-                ->where('candidates.0.id', $older->id)
-                ->where('candidates.0.email', $older->email));
+            ->where('candidateSearch', 'older-candidate@example.test')
+            ->where('candidates.0.id', $older->id)
+            ->where('candidates.0.email', $older->email));
     }
 }

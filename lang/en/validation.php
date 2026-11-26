@@ -112,5 +112,6 @@ return [
         'bank_snapshot' => 'bank instructions',
         'reviewed_by' => 'reviewing administrator',
         'locale' => 'interface language',
+        'accept_terms' => 'terms acceptance',
     ],
 ];

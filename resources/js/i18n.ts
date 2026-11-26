@@ -1,14 +1,22 @@
 import { useSyncExternalStore } from 'react';
 import englishMessages from '../../lang/en.json';
-const english: Record<string, string> = englishMessages;
+import macedonianMessages from '../../lang/mk.json';
 
-export type Locale = 'sq' | 'en';
+/** Albanian (sq) is the source language: its strings are the keys of every other catalog.
+ * Adding a language = one catalog import, one entry here, and the server's supported_locales. */
+const catalogs = { en: englishMessages, mk: macedonianMessages } satisfies Record<string, Record<string, string>>;
+export const locales = ['sq', ...Object.keys(catalogs)] as Locale[];
+export const localeNames: Record<Locale, string> = { sq: 'Shqip', en: 'English', mk: 'Македонски' };
+const localeTags: Record<Locale, string> = { sq: 'sq-AL', en: 'en-GB', mk: 'mk-MK' };
+
+export type Locale = 'sq' | keyof typeof catalogs;
 export type MessageKey = string;
 type Values = Record<string, string | number | null | undefined>;
 let current: Locale = 'sq';
 const listeners = new Set<() => void>();
 export const getLocale = () => current;
-export const localeTag = () => (current === 'en' ? 'en-GB' : 'sq-AL');
+export const localeTag = () => localeTags[current];
+export const isLocale = (value: unknown): value is Locale => typeof value === 'string' && (locales as string[]).includes(value);
 
 export function setLocale(locale: Locale) {
     current = locale;
@@ -36,15 +44,17 @@ function interpolate(message: string, values: Values) {
 /** Source-language keys make a missing translation readable, never a machine key. */
 export function t(key: MessageKey, values: Values = {}) {
     return interpolate(
-        current === 'en' ? english[key] || key : key,
+        current === 'sq' ? key : (catalogs[current] as Record<string, string>)[key] || key,
         values,
     );
 }
 
-const reverse = new Map(Object.entries(english).map(([sq, en]) => [en, sq as MessageKey]));
+const sourceKeys = new Set(Object.values(catalogs).flatMap((catalog) => Object.keys(catalog)));
+const translated = Object.values(catalogs).flatMap((catalog) => Object.entries(catalog as Record<string, string>));
+const reverse = new Map(translated.map(([sq, value]) => [value, sq as MessageKey]));
 const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const templates = Object.entries(english).flatMap(([sq, en]) =>
-    [sq, en]
+const templates = translated.flatMap(([sq, value]) =>
+    [sq, value]
         .filter((value) => /:[a-zA-Z]/.test(value))
         .map((source) => {
             const names: string[] = [];
@@ -68,7 +78,7 @@ const templates = Object.entries(english).flatMap(([sq, en]) =>
  */
 export function ui(value: string | null | undefined): string {
     if (!value) return '';
-    if (Object.prototype.hasOwnProperty.call(english, value)) return t(value as MessageKey);
+    if (sourceKeys.has(value)) return t(value as MessageKey);
     const key = reverse.get(value);
     if (key) return t(key);
     for (const template of templates) {

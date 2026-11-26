@@ -7,9 +7,12 @@ export function dateFromToday(days = 0): string {
 }
 // Explicit CLDR/Carbon labels also work in browsers without Albanian Intl data.
 export function displayDate(date: string): string {
-  return date.split("-").reverse().join(getLocale() === "sq" ? "." : "/");
+  return date.split("-").reverse().join(getLocale() === "en" ? "/" : ".");
 }
 export function weekdayShort(date: string): string {
-  const labels = getLocale() === "sq" ? ["die", "hën", "mar", "mër", "enj", "pre", "sht"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const locale = getLocale();
+  const labels = locale === "sq" ? ["die", "hën", "mar", "mër", "enj", "pre", "sht"]
+    : locale === "mk" ? ["нед", "пон", "вто", "сре", "чет", "пет", "саб"]
+    : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   return labels[new Date(`${date}T12:00:00`).getDay()].toUpperCase();
 }

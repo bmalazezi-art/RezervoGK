@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Locales;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,13 +16,13 @@ class SetLocale
         $locale = $request->cookie(self::COOKIE);
         // Recovery links carry a whitelisted language, never a user-supplied origin.
         $linkLocale = $request->isMethod('GET') && $request->routeIs('password.reset') ? $request->query('locale') : null;
-        if (in_array($linkLocale, ['sq', 'en'], true)) {
+        if (Locales::supports($linkLocale)) {
             $locale = $linkLocale;
         }
-        app()->setLocale(in_array($locale, ['sq', 'en'], true) ? $locale : 'sq');
+        app()->setLocale(Locales::resolve($locale));
         $response = $next($request);
         $response->setVary('Cookie', false);
-        if (in_array($linkLocale, ['sq', 'en'], true)) {
+        if (Locales::supports($linkLocale)) {
             $response->headers->setCookie(cookie(self::COOKIE, $linkLocale, 525600, '/', null, $request->isSecure(), true, false, 'lax'));
         }
 

@@ -3,7 +3,7 @@ import "../css/header.css";
 import { createInertiaApp, router } from "@inertiajs/react";
 import { createRoot } from "react-dom/client";
 import { StrictMode, type ComponentType, type ReactNode } from "react";
-import { setLocale } from "./i18n";
+import { isLocale, setLocale } from "./i18n";
 import MarketplaceLayout from "./layouts/MarketplaceLayout";
 import { startCloudflareAnalytics, watchAuthSignal, type AnalyticsRouter } from "./lib/cloudflareAnalytics";
 
@@ -19,7 +19,7 @@ createInertiaApp({
     return module;
   },
   setup({ el, App, props }) {
-    setLocale(props.initialPage.props.locale === "en" ? "en" : "sq");
+    setLocale(isLocale(props.initialPage.props.locale) ? props.initialPage.props.locale : "sq");
     const analyticsRouter: AnalyticsRouter = {
       onBefore: (callback) => router.on("before", (event) => callback(event.detail.visit)),
       onNavigate: (callback) => router.on("navigate", (event) => callback(event.detail.page)),

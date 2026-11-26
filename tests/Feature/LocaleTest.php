@@ -8,8 +8,10 @@ use App\Models\GoalkeeperProfile;
 use App\Models\PaymentEmailDelivery;
 use App\Models\User;
 use App\Support\AvailabilityCalendar;
+use App\Support\Locales;
 use App\Support\ManualPaymentService;
 use App\Support\PaymentEmailSender;
+use Carbon\CarbonImmutable;
 use Database\Seeders\GoalkeeperDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -36,6 +38,20 @@ class LocaleTest extends TestCase
         $this->get('/')->assertInertia(fn (Assert $page) => $page->where('locale', 'sq'));
         $this->withCookie(SetLocale::COOKIE, 'de')->get('/')->assertInertia(fn (Assert $page) => $page->where('locale', 'sq'));
         $this->withCookie(SetLocale::COOKIE, 'en')->get('/')->assertSee('<html lang="en">', false)->assertInertia(fn (Assert $page) => $page->where('locale', 'en'));
+        $this->withCookie(SetLocale::COOKIE, 'mk')->get('/')->assertSee('<html lang="mk">', false)->assertInertia(fn (Assert $page) => $page->where('locale', 'mk'));
+    }
+
+    public function test_macedonian_can_be_chosen_and_translates_server_messages_and_validation(): void
+    {
+        $this->postJson('/locale', ['locale' => 'mk'])->assertOk()->assertExactJson(['locale' => 'mk'])->assertCookie(SetLocale::COOKIE, 'mk');
+        $this->withCookie(SetLocale::COOKIE, 'mk')->get('/')->assertSee('<meta name="description" content="Најди портир и контактирај го директно преку WhatsApp или телефон за твојот натпревар.">', false);
+        $this->withCookie(SetLocale::COOKIE, 'mk')->postJson('/login', ['email' => '', 'password' => ''])->assertUnprocessable()
+            ->assertJsonValidationErrors(['email' => 'Полето е-пошта е задолжително.', 'password' => 'Полето лозинка е задолжително.']);
+        $this->withCookie(SetLocale::COOKIE, 'mk')->get('/locale-qa-missing')->assertNotFound()->assertSee('<html lang="mk">', false)->assertSee('Страницата не е пронајдена');
+        $this->get('/reset-password/test-only-invalid-token?locale=mk')->assertCookie(SetLocale::COOKIE, 'mk')->assertSee('<html lang="mk">', false);
+        app()->setLocale('mk');
+        $this->assertSame('ПОН', mb_strtoupper(CarbonImmutable::parse('2026-10-26')->locale('mk')->isoFormat('ddd')));
+        $this->assertSame('d.m.Y H:i', Locales::dateFormat(withTime: true));
     }
 
     public function test_preference_endpoint_is_whitelisted_and_sets_a_private_secure_cookie(): void
@@ -103,7 +119,7 @@ class LocaleTest extends TestCase
 
     public static function languages(): array
     {
-        return [['sq'], ['en']];
+        return [['sq'], ['en'], ['mk']];
     }
 
     #[DataProvider('languages')]
@@ -115,7 +131,7 @@ class LocaleTest extends TestCase
         }
         $this->get('/pricing')->assertRedirect('/');
         $this->get('/reset-password/test-only-invalid-token?locale='.$locale)->assertOk()->assertCookie(SetLocale::COOKIE, $locale)->assertInertia(fn (Assert $page) => $page->where('locale', $locale));
-        $this->postJson('/reset-password', ['token' => 'test-only-invalid-token', 'email' => 'absent@example.test', 'password' => 'New-Password-12345!', 'password_confirmation' => 'New-Password-12345!'])->assertUnprocessable()->assertJsonValidationErrors(['email' => $locale === 'en' ? 'The reset link is invalid or has expired.' : 'Lidhja e rivendosjes është e pavlefshme ose ka skaduar.']);
+        $this->postJson('/reset-password', ['token' => 'test-only-invalid-token', 'email' => 'absent@example.test', 'password' => 'New-Password-12345!', 'password_confirmation' => 'New-Password-12345!'])->assertUnprocessable()->assertJsonValidationErrors(['email' => ['sq' => 'Lidhja e rivendosjes është e pavlefshme ose ka skaduar.', 'en' => 'The reset link is invalid or has expired.', 'mk' => 'Врската за ресетирање е невалидна или истекла.'][$locale]]);
     }
 
     public function test_early_missing_route_and_method_errors_use_the_encrypted_cookie_locale(): void
@@ -174,12 +190,12 @@ class LocaleTest extends TestCase
                 $this->assertStringNotContainsString('QA-NOT-REAL', $message);
                 $this->assertStringNotContainsString('Shënim privat', $message);
             }
-            $this->assertStringContainsString($locale === 'en' ? 'This link expires in 60 minutes' : 'skadon pas 60 minutash', $messages[0]);
+            $this->assertStringContainsString(['sq' => 'skadon pas 60 minutash', 'en' => 'This link expires in 60 minutes', 'mk' => 'истекува за 60 минути'][$locale], $messages[0]);
             $this->assertStringContainsString('locale='.$locale, $messages[0]);
             preg_match('~/reset-password/([a-zA-Z0-9]+)~', $messages[0], $matches);
             $this->assertTrue(Password::tokenExists($owner, $matches[1]));
-            $this->assertStringContainsString($locale === 'en' ? 'Your public access payment was approved' : 'Pagesa për qasjen publike u miratua', $messages[1]);
-            $this->assertStringContainsString($locale === 'en' ? 'Your payment submission was rejected' : 'Njoftimi i pagesës u refuzua', $messages[2]);
+            $this->assertStringContainsString(['sq' => 'Pagesa për qasjen publike u miratua', 'en' => 'Your public access payment was approved', 'mk' => 'Твоето плаќање за јавен пристап е одобрено'][$locale], $messages[1]);
+            $this->assertStringContainsString(['sq' => 'Njoftimi i pagesës u refuzua', 'en' => 'Your payment submission was rejected', 'mk' => 'Пријавата за твоето плаќање е одбиена'][$locale], $messages[2]);
             $this->assertDatabaseCount('subscriptions', 1);
         } finally {
             Mail::purge('smtp');

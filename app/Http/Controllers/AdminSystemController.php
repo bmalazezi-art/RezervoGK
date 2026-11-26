@@ -37,6 +37,7 @@ class AdminSystemController extends Controller
                 'announcement' => PlatformSetting::value('announcement', ''),
                 'announcementSq' => PlatformSetting::value('announcement_sq', ''),
                 'announcementEn' => PlatformSetting::value('announcement_en', ''),
+                'announcementMk' => PlatformSetting::value('announcement_mk', ''),
             ],
             'admins' => $users->map(fn (User $user) => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'createdAt' => $user->created_at->toIso8601String(), 'isSuperAdmin' => $user->isSuperAdmin()]),
             'canManageAdminAccess' => $canManageAdminAccess,
@@ -59,6 +60,7 @@ class AdminSystemController extends Controller
             'announcement' => ['nullable', 'string', 'max:280'],
             'announcement_sq' => ['nullable', 'string', 'max:280'],
             'announcement_en' => ['nullable', 'string', 'max:280'],
+            'announcement_mk' => ['nullable', 'string', 'max:280'],
             'reason' => ['required', 'string', 'min:10', 'max:500'],
         ]);
         $actor = $request->user();
@@ -66,7 +68,7 @@ class AdminSystemController extends Controller
         DB::transaction(function () use ($actor, $data) {
             $lockedActor = User::query()->whereKey($actor->id)->lockForUpdate()->firstOrFail();
             abort_unless($lockedActor->isSuperAdmin() && ! $lockedActor->is_suspended, 403);
-            $keys = ['announcement', 'announcement_sq', 'announcement_en', 'registration_enabled'];
+            $keys = ['announcement', 'announcement_sq', 'announcement_en', 'announcement_mk', 'registration_enabled'];
             $settings = PlatformSetting::query()->whereIn('key', $keys)
                 ->orderBy('key')->lockForUpdate()->get()->keyBy('key');
             // Older admin clients still submit the original single-language field. Keep that
@@ -78,6 +80,7 @@ class AdminSystemController extends Controller
                 'registration_enabled' => ($settings['registration_enabled']->value ?? '1') === '1',
                 'announcement_sq' => (string) ($settings['announcement_sq']->value ?? ''),
                 'announcement_en' => (string) ($settings['announcement_en']->value ?? ''),
+                'announcement_mk' => (string) ($settings['announcement_mk']->value ?? ''),
                 'legacy_announcement' => (string) ($settings['announcement']->value ?? ''),
             ];
             $next = [
@@ -86,9 +89,13 @@ class AdminSystemController extends Controller
                     ? trim((string) ($data['announcement_sq'] ?? '')) : (string) ($settings['announcement_sq']->value ?? ''),
                 'announcement_en' => array_key_exists('announcement_en', $data)
                     ? trim((string) ($data['announcement_en'] ?? '')) : (string) ($settings['announcement_en']->value ?? ''),
+                'announcement_mk' => array_key_exists('announcement_mk', $data)
+                    ? trim((string) ($data['announcement_mk'] ?? '')) : (string) ($settings['announcement_mk']->value ?? ''),
                 'legacy_announcement' => $legacyAnnouncement,
             ];
-            if ($previous === $next) return;
+            if ($previous === $next) {
+                return;
+            }
 
             foreach ($keys as $key) {
                 $setting = $settings->get($key) ?? new PlatformSetting(['key' => $key]);
@@ -125,7 +132,9 @@ class AdminSystemController extends Controller
             $target = $admins->firstWhere('id', $user->id) ?? User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
             abort_if((int) $lockedActor->id === (int) $target->id, 403, __('Nuk mund të ndryshoni privilegjet tuaja.'));
             abort_if($target->hasSuperAdminIdentity() && ! $next, 403, __('Qasja e Super Admin nuk mund të hiqet.'));
-            if ((bool) $target->is_admin === $next) return;
+            if ((bool) $target->is_admin === $next) {
+                return;
+            }
             if ($target->is_admin && ! $next && $admins->count() <= 1) {
                 throw ValidationException::withMessages(['is_admin' => __('Administratori i fundit nuk mund të çaktivizohet.')]);
             }

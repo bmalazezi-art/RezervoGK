@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Locales;
 use Closure;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Cookie\CookieValuePrefix;
@@ -24,7 +25,7 @@ class ResolveErrorLocale
                 // Invalid cookies cannot select a locale or expose exception data.
             }
         }
-        app()->setLocale(in_array($locale, ['sq', 'en'], true) ? $locale : 'sq');
+        app()->setLocale(Locales::resolve($locale));
 
         return $next($request);
     }

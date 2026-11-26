@@ -1,4 +1,4 @@
-import { t, useLocale } from "../i18n";
+import { isLocale, localeNames, t, useLocale } from "../i18n";
 import { router, useForm, usePage } from "@inertiajs/react";
 import type { FormEvent } from "react";
 import { Button } from "../components/marketplace";
@@ -12,7 +12,7 @@ function auditValue(key: string, value: unknown): string {
   if (typeof value === "boolean") return t(value ? "Po" : "Jo");
   if (key === "amount_cents" || key === "verified_amount_cents") return (Number(value) / 100).toFixed(2);
   if (typeof value === "string") {
-    if (key === "locale") return value === "en" ? "English" : "Shqip";
+    if (key === "locale") return isLocale(value) ? localeNames[value] : value;
     if (key === "starts_at" || key === "ends_at") return paymentDate(value);
     if (key === "received_on") return displayDate(value);
     if (key === "from" || key === "to") return t(paymentStatus[value as ManualPayment["status"]] ?? "Status tjetër");

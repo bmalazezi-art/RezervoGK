@@ -112,5 +112,6 @@ return [
         'bank_snapshot' => 'udhëzimet bankare',
         'reviewed_by' => 'administratori shqyrtues',
         'locale' => 'gjuha e ndërfaqes',
+        'accept_terms' => 'pranimi i kushteve',
     ],
 ];

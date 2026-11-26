@@ -44,7 +44,7 @@ class GoalkeeperEligibility
 
         return ['isEligible' => self::eligibleUsers(User::whereKey($user->id), $now)->exists(),
             'subscriptionEndsAt' => $period?->ends_at->toIso8601String(),
-            'subscriptionEndsAtLabel' => $period?->ends_at->setTimezone(config('marketplace.timezone'))->format(app()->getLocale() === 'en' ? 'd/m/Y H:i' : 'd.m.Y H:i'),
+            'subscriptionEndsAtLabel' => $period?->ends_at->setTimezone(config('marketplace.timezone'))->format(Locales::dateFormat(withTime: true)),
             'subscriptionStatus' => ! $period ? 'inactive' : ($period->ends_at->lessThanOrEqualTo($now) ? 'expired' : (self::approvedPeriods($user->subscriptions()->getQuery())->where('starts_at', '<=', $now)->where('ends_at', '>', $now)->exists() ? 'active' : 'scheduled'))];
     }
 }

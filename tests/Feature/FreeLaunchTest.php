@@ -8,8 +8,8 @@ use App\Models\GoalkeeperProfile;
 use App\Models\ManualPayment;
 use App\Models\PaymentEmailDelivery;
 use App\Models\User;
-use App\Support\BankTransfer;
 use App\Support\AvailabilityCalendar;
+use App\Support\BankTransfer;
 use App\Support\ManualPaymentService;
 use App\Support\PaymentEmailSender;
 use Database\Seeders\GoalkeeperDemoSeeder;
@@ -53,7 +53,7 @@ class FreeLaunchTest extends TestCase
 
     public static function languages(): array
     {
-        return [['sq'], ['en']];
+        return [['sq'], ['en'], ['mk']];
     }
 
     #[DataProvider('languages')]

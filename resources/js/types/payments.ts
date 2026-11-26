@@ -12,6 +12,6 @@ export const paymentDate = (date: string | null) => {
   if (!date) return "—";
   const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Belgrade", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(date));
   const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(value => value.type === type)?.value ?? "";
-  const separator = getLocale() === "sq" ? "." : "/";
+  const separator = getLocale() === "en" ? "/" : ".";
   return `${part("day")}${separator}${part("month")}${separator}${part("year")} ${part("hour")}:${part("minute")}`;
 };

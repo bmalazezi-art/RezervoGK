@@ -82,6 +82,9 @@ return [
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 
+    // Interface languages users can choose; Albanian (sq) is the default and source language.
+    'supported_locales' => ['sq', 'en', 'mk'],
+
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
     /*

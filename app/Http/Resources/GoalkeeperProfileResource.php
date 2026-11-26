@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Support\AvailabilityCalendar;
 use App\Support\GoalkeeperPricing;
+use App\Support\Locales;
 use App\Support\ProfilePhoto;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -27,7 +28,7 @@ class GoalkeeperProfileResource extends JsonResource
         $requestedAvailability = is_string($requested) ? in_array($requested, $dates, true) : null;
         $first = is_string($requested) && in_array($requested, $dates, true) ? $requested : ($dates[0] ?? null);
         $today = AvailabilityCalendar::today();
-        $label = $first === $today->toDateString() ? __('Sot') : ($first === $today->addDay()->toDateString() ? __('Nesër') : ($first ? CarbonImmutable::parse($first)->format(app()->getLocale() === 'en' ? 'd/m/Y' : 'd.m.Y') : __('Pa data të publikuara')));
+        $label = $first === $today->toDateString() ? __('Sot') : ($first === $today->addDay()->toDateString() ? __('Nesër') : ($first ? CarbonImmutable::parse($first)->format(Locales::dateFormat()) : __('Pa data të publikuara')));
 
         return [
             'id' => $this->id,

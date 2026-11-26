@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { getLocale, setLocale, t, useLocale, type Locale } from '../i18n';
+import { getLocale, localeNames, locales, setLocale, t, useLocale, type Locale } from '../i18n';
 
 export default function LanguageSwitcher({ className = '' }: { className?: string }) {
     const locale = useLocale();
@@ -45,12 +45,12 @@ export default function LanguageSwitcher({ className = '' }: { className?: strin
                 aria-label={t('Gjuha e ndërfaqes')}
                 aria-busy={busy}
             >
-                {(['sq', 'en'] as const).map((item) => (
+                {locales.map((item) => (
                     <button
                         key={item}
                         type="button"
                         lang={item}
-                        aria-label={item === 'sq' ? 'Shqip' : 'English'}
+                        aria-label={localeNames[item]}
                         aria-pressed={locale === item}
                         disabled={busy}
                         onClick={() => void change(item)}

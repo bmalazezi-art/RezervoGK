@@ -48,7 +48,7 @@ class GoalkeeperTrial
             'remainingDays' => $active ? (int) ceil($now->diffInSeconds($ends, false) / 86400) : 0,
             'startedAt' => $user->trial_started_at?->toIso8601String(),
             'endsAt' => $ends?->toIso8601String(),
-            'endsAtLabel' => $ends?->setTimezone(config('marketplace.timezone'))->format(app()->getLocale() === 'en' ? 'd/m/Y H:i' : 'd.m.Y H:i'),
+            'endsAtLabel' => $ends?->setTimezone(config('marketplace.timezone'))->format(Locales::dateFormat(withTime: true)),
             'status' => $active ? 'active' : ($ends && $ends->lessThanOrEqualTo($now) ? 'expired' : 'not_started'),
         ];
     }

@@ -48,11 +48,11 @@ class PaymentEmailSender
             }
             $zone = config('marketplace.timezone');
             $locale = $payment->audits()->where('event', 'submitted')->latest('id')->first()?->metadata['locale'] ?? 'sq';
-            $locale = in_array($locale, ['sq', 'en'], true) ? $locale : 'sq';
+            $locale = Locales::resolve($locale);
             Mail::mailer(config('mail.default'))->to($payment->user->email)->send((new BankTransferDecisionMail([
                 'decision' => $delivery->decision, 'reference' => $payment->reference,
-                'startsAt' => $payment->subscription?->starts_at->setTimezone($zone)->format($locale === 'en' ? 'd/m/Y H:i' : 'd.m.Y H:i'),
-                'endsAt' => $payment->subscription?->ends_at->setTimezone($zone)->format($locale === 'en' ? 'd/m/Y H:i' : 'd.m.Y H:i'),
+                'startsAt' => $payment->subscription?->starts_at->setTimezone($zone)->format(Locales::dateFormat($locale, true)),
+                'endsAt' => $payment->subscription?->ends_at->setTimezone($zone)->format(Locales::dateFormat($locale, true)),
                 'timezone' => $zone, 'dashboardUrl' => TransactionalMail::url('dashboard'),
             ]))->locale($locale));
             $changes = ['status' => 'sent', 'sent_at' => now(), 'next_attempt_at' => null];

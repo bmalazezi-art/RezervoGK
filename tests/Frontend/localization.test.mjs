@@ -37,17 +37,49 @@ const { paymentDate } = load('resources/js/types/payments.ts');
 const { keeperAvailability, keeperLocation } = load('resources/js/lib/keeperLabels.ts');
 const en = JSON.parse(readFileSync(resolve(root, 'lang/en.json')));
 const sq = JSON.parse(readFileSync(resolve(root, 'lang/sq.json')));
+const mk = JSON.parse(readFileSync(resolve(root, 'lang/mk.json')));
+const placeholders = (v) => [...v.matchAll(/:[a-zA-Z][a-zA-Z0-9_]*/g)].map(m => m[0]).sort();
 
 test('SQ is default and locale updates document language', () => {
   assert.equal(getLocale(), 'sq'); assert.equal(t('Kyçu'), 'Kyçu');
   setLocale('en'); assert.equal(document.documentElement.lang, 'en'); assert.equal(t('Kyçu'), 'Log in');
+  setLocale('mk'); assert.equal(document.documentElement.lang, 'mk'); assert.equal(t('Kyçu'), 'Најави се'); assert.equal(localeTag(), 'mk-MK');
   setLocale('sq'); assert.equal(localeTag(), 'sq-AL');
+});
+test('Macedonian catalog has exactly the Albanian source keys, no empty values and matching placeholders', () => {
+  assert.deepEqual(Object.keys(mk).sort(), Object.keys(sq).sort());
+  for (const key of Object.keys(en)) assert.ok(Object.hasOwn(mk, key), `Missing MK: ${key}`);
+  for (const [key, value] of Object.entries(mk)) {
+    assert.equal(typeof value, 'string'); assert.ok(value.trim().length, `Empty MK: ${key}`);
+    assert.deepEqual(placeholders(value), placeholders(key), `MK placeholder mismatch: ${key}`);
+    // Albanian-only letters in a Macedonian value mean the string was copied, not translated.
+    assert.doesNotMatch(value, /[ëçËÇ]/, `Untranslated MK: ${key}`);
+  }
+  for (const brand of ['Gjej portier', 'EUR', 'MKD', 'gjejportier@gmail.com']) {
+    for (const [key, value] of Object.entries(mk)) if ((en[key] ?? key).includes(brand)) assert.ok(value.includes(brand), `MK must keep ${brand}: ${key}`);
+  }
+});
+test('Macedonian PHP validation messages and attribute names are the catalog strings, so they re-translate in place', () => {
+  const php = readFileSync(resolve(root, 'lang/mk/validation.php'), 'utf8');
+  const values = [...php.matchAll(/=> '((?:[^'\\]|\\.)*)'/g)].map(m => m[1]);
+  const catalog = new Set(Object.values(mk));
+  assert.ok(values.length > 90);
+  for (const value of values) assert.ok(catalog.has(value), `lang/mk/validation.php string is not in mk.json: ${value}`);
+  for (const file of ['auth', 'passwords', 'pagination']) assert.ok(existsSync(resolve(root, `lang/mk/${file}.php`)), `lang/mk/${file}.php exists`);
+  setLocale('mk');
+  assert.equal(ui('Fusha çmimi është e detyrueshme.'), 'Полето цена е задолжително.');
+  assert.equal(ui('The price field is required.'), 'Полето цена е задолжително.');
+  assert.equal(ui('Полето лозинка мора да содржи најмалку 12 знаци.'), 'Полето лозинка мора да содржи најмалку 12 знаци.');
+  setLocale('en');
+  assert.equal(ui('Полето цена е задолжително.'), 'The price field is required.');
+  assert.equal(ui('Фотографијата е зачувана.'), 'Photo saved.');
+  setLocale('sq');
+  assert.equal(ui('Полето лозинка мора да содржи најмалку 12 знаци.'), 'Fusha fjalëkalimi duhet të ketë të paktën 12 karaktere.');
 });
 test('catalogs cover every source key and preserve placeholders', () => {
   for (const [key, english] of Object.entries(en)) {
     assert.equal(sq[key], key, `Missing SQ source: ${key}`);
     assert.ok(english.length, `Empty English: ${key}`);
-    const placeholders = (v) => [...v.matchAll(/:[a-zA-Z][a-zA-Z0-9_]*/g)].map(m => m[0]).sort();
     assert.deepEqual(placeholders(key), placeholders(english), `Placeholder mismatch: ${key}`);
     if (/[ëçËÇ]/.test(key)) assert.notEqual(english, key, `Untranslated: ${key}`);
   }
@@ -77,6 +109,7 @@ test('all public information page copy and metadata have English translations', 
   function visit(node) {
     if (ts.isStringLiteral(node) && node.text !== 'gjejportier@gmail.com') {
       assert.ok(en[node.text], `Information page copy is missing an EN translation: ${node.text}`);
+      assert.ok(mk[node.text], `Information page copy is missing an MK translation: ${node.text}`);
       assert.ok(!/rezervo\s*gk|rezervogk/i.test(node.text), `Old brand appears in public copy: ${node.text}`);
     }
     ts.forEachChild(node, visit);
@@ -110,6 +143,7 @@ test('all explicit UI calls and curated document/option text have translations',
       function visit(node) {
         if (ts.isCallExpression(node) && node.expression.getText(source) === 't' && node.arguments[0] && ts.isStringLiteral(node.arguments[0])) {
           assert.ok(en[node.arguments[0].text], `${file}: ${node.arguments[0].text}`);
+          assert.ok(mk[node.arguments[0].text], `${file} (MK): ${node.arguments[0].text}`);
         }
         if (ts.isJsxText(node)) {
           const value = node.getFullText(source).trim();
@@ -135,7 +169,7 @@ test('validation and status text switches in place, including interpolated field
   assert.equal(ui('Photo saved.'), 'Fotografia u ruajt.');
 });
 test('price and dates use the selected locale without conversion or mutating canonical amounts', () => {
-  for (const language of ['sq', 'en']) {
+  for (const language of ['sq', 'en', 'mk']) {
     setLocale(language);
     const tag = localeTag();
     for (const currency of ['EUR', 'ALL', 'MKD']) {
@@ -143,6 +177,13 @@ test('price and dates use the selected locale without conversion or mutating can
         const expected = new Intl.NumberFormat(tag, { style: 'currency', currency, currencyDisplay: currency === 'EUR' ? 'symbol' : 'code', minimumFractionDigits: amount.endsWith('.00') ? 0 : 2, maximumFractionDigits: 2 }).format(Number(amount));
         assert.equal(formatPrice(amount, currency), expected);
       }
+    }
+    if (language === 'mk') {
+      // Explicit labels: Intl mk adds 'г.' to dates and dots to weekdays.
+      assert.equal(displayDate('2026-10-23'), '23.10.2026');
+      assert.equal(weekdayShort('2026-10-26'), 'ПОН');
+      assert.equal(paymentDate('2026-10-24T23:30:00+00:00'), '25.10.2026 01:30');
+      continue;
     }
     assert.equal(displayDate('2026-10-23'), new Intl.DateTimeFormat(tag, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date('2026-10-23T12:00:00')));
     assert.equal(weekdayShort('2026-10-26'), new Intl.DateTimeFormat(tag, { weekday: 'short' }).format(new Date('2026-10-26T12:00:00')).toUpperCase());
@@ -173,4 +214,14 @@ test('Albanian formatting remains correct when the browser has no SQ Intl data',
   assert.equal(dates.displayDate('2026-10-23'), '23.10.2026');
   assert.equal(dates.weekdayShort('2026-10-23'), 'PRE');
   assert.equal(payments.paymentDate('2026-10-24T23:30:00+00:00'), '25.10.2026 01:30');
+});
+
+test('Macedonian formatting remains correct when the browser has no MK Intl data', () => {
+  const unsupportedMk = { NumberFormat: function (locale, options) { return new Intl.NumberFormat(locale.startsWith('mk') ? 'en-US' : locale, options); }, DateTimeFormat: Intl.DateTimeFormat };
+  const fallbackLoad = createLoader(unsupportedMk);
+  fallbackLoad('resources/js/i18n.ts').setLocale('mk');
+  const pricing = fallbackLoad('resources/js/lib/pricing.ts');
+  for (const [amount, currency] of [['7.00', 'EUR'], ['1200.75', 'ALL'], ['10000.00', 'MKD'], ['950.00', 'MKD']]) {
+    assert.equal(pricing.formatPrice(amount, currency), new Intl.NumberFormat('mk-MK', { style: 'currency', currency, currencyDisplay: currency === 'EUR' ? 'symbol' : 'code', minimumFractionDigits: amount.endsWith('.00') ? 0 : 2, maximumFractionDigits: 2 }).format(Number(amount)));
+  }
 });
